@@ -1,9 +1,12 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 
-export default function DashboardScreen() {
+export default function ActiveWorkoutScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Dashboard</Text>
+      <Text style={styles.text}>Active Workout: {id}</Text>
     </View>
   );
 }

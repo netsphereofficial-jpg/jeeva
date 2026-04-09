@@ -1,33 +1,78 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
+import { LayoutDashboard, Dumbbell, Bell, Activity } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import { Platform, Pressable } from 'react-native';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+function HapticTabButton(props: React.ComponentProps<typeof Pressable>) {
+  return (
+    <Pressable
+      {...props}
+      onPress={(e) => {
+        if (Platform.OS !== 'web') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+        props.onPress?.(e);
+      }}
+    />
+  );
+}
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+        tabBarActiveTintColor: '#FF6B35',
+        tabBarInactiveTintColor: '#666666',
+        tabBarStyle: {
+          backgroundColor: 'rgba(10, 10, 15, 0.95)',
+          borderTopColor: 'rgba(255, 255, 255, 0.05)',
+          borderTopWidth: 1,
+          paddingTop: 8,
+          height: 88,
+        },
+        tabBarLabelStyle: {
+          fontFamily: 'DMSans_500Medium',
+          fontSize: 10,
+          marginTop: 4,
+        },
+        tabBarButton: HapticTabButton,
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <LayoutDashboard size={size ?? 22} color={color} strokeWidth={2} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="workout"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Workout',
+          tabBarIcon: ({ color, size }) => (
+            <Dumbbell size={size ?? 22} color={color} strokeWidth={2} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="alarms"
+        options={{
+          title: 'Alarms',
+          tabBarIcon: ({ color, size }) => (
+            <Bell size={size ?? 22} color={color} strokeWidth={2} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="health"
+        options={{
+          title: 'Health',
+          tabBarIcon: ({ color, size }) => (
+            <Activity size={size ?? 22} color={color} strokeWidth={2} />
+          ),
         }}
       />
     </Tabs>

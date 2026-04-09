@@ -1,9 +1,9 @@
 import { View, Text, StyleSheet } from 'react-native';
 
-export default function DashboardScreen() {
+export default function WorkoutSummaryScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Dashboard</Text>
+      <Text style={styles.text}>Workout Summary</Text>
     </View>
   );
 }
