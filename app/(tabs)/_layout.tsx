@@ -1,17 +1,19 @@
 import { Tabs } from 'expo-router';
+import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import { LayoutDashboard, Dumbbell, Bell, Activity } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { Platform, Pressable } from 'react-native';
+import { colors } from '@/theme/colors';
 
-function HapticTabButton(props: React.ComponentProps<typeof Pressable>) {
+function HapticTabButton(props: BottomTabBarButtonProps) {
   return (
     <Pressable
-      {...props}
+      {...(props as React.ComponentProps<typeof Pressable>)}
       onPress={(e) => {
         if (Platform.OS !== 'web') {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
-        props.onPress?.(e);
+        (props.onPress as React.ComponentProps<typeof Pressable>['onPress'])?.(e);
       }}
     />
   );
@@ -22,8 +24,8 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#FF6B35',
-        tabBarInactiveTintColor: '#666666',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textTertiary,
         tabBarStyle: {
           backgroundColor: 'rgba(10, 10, 15, 0.95)',
           borderTopColor: 'rgba(255, 255, 255, 0.05)',
