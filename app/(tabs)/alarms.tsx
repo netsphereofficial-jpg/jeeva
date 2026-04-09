@@ -1,14 +1,436 @@
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+  Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
+import {
+  Plus,
+  Bell,
+  Sun,
+  Dumbbell,
+  Pill,
+  Flame,
+} from 'lucide-react-native';
+
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { BottomSheet } from '@/components/ui/BottomSheet';
+import { Button } from '@/components/ui/Button';
+import { MonoText } from '@/components/ui/MonoText';
+import { Card } from '@/components/ui/Card';
+import { AlarmCard } from '@/components/alarms/AlarmCard';
+import { AlarmForm } from '@/components/alarms/AlarmForm';
+import { MedicationChecklist } from '@/components/alarms/MedicationChecklist';
+import { CalendarHeatmap } from '@/components/alarms/CalendarHeatmap';
+import { useAlarms } from '@/hooks/useAlarms';
+import { useMedications } from '@/hooks/useMedications';
+import { colors } from '@/theme/colors';
+import { radius, spacing } from '@/theme/spacing';
+import type { AlarmType, MedFrequency } from '@/types';
+
+const SEGMENTS = ['Alarms', 'Medications'] as const;
+
+const SECTION_CONFIG: Record<AlarmType, { icon: typeof Sun; color: string; label: string }> = {
+  wakeup: { icon: Sun, color: colors.alarmWakeup, label: 'Wake-Up' },
+  workout: { icon: Dumbbell, color: colors.alarmWorkout, label: 'Workout' },
+  medication: { icon: Pill, color: colors.alarmMedication, label: 'Medication' },
+};
+
+const FREQ_SEGMENTS = ['Daily', 'Twice', 'Weekly'] as const;
+const FREQ_MAP: Record<number, MedFrequency> = {
+  0: 'daily',
+  1: 'twice_daily',
+  2: 'weekly',
+};
 
 export default function AlarmsScreen() {
+  const [activeSegment, setActiveSegment] = useState(0);
+  const [showAlarmForm, setShowAlarmForm] = useState(false);
+  const [showMedForm, setShowMedForm] = useState(false);
+
+  const { alarms, groupedAlarms, addAlarm, toggleAlarm, deleteAlarm } = useAlarms();
+  const { todaysMeds, streak, calendarData, logDose, addMedication, medications } = useMedications();
+
+  // Medication form state
+  const [medName, setMedName] = useState('');
+  const [medDosage, setMedDosage] = useState('');
+  const [medFreqIndex, setMedFreqIndex] = useState(0);
+  const [medTimes, setMedTimes] = useState<string[]>(['08:00']);
+
+  const resetMedForm = () => {
+    setMedName('');
+    setMedDosage('');
+    setMedFreqIndex(0);
+    setMedTimes(['08:00']);
+  };
+
+  const handleAddMed = () => {
+    if (!medName.trim() || !medDosage.trim()) return;
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    addMedication({
+      name: medName.trim(),
+      dosage: medDosage.trim(),
+      frequency: FREQ_MAP[medFreqIndex],
+      times: medTimes,
+      active: true,
+    });
+    resetMedForm();
+    setShowMedForm(false);
+  };
+
+  const handleFreqChange = (index: number) => {
+    setMedFreqIndex(index);
+    // Set default time slots based on frequency
+    if (index === 0) setMedTimes(['08:00']);
+    else if (index === 1) setMedTimes(['08:00', '20:00']);
+    else setMedTimes(['08:00']);
+  };
+
+  const handleOpenAlarmForm = () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    setShowAlarmForm(true);
+  };
+
+  const handleOpenMedForm = () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    setShowMedForm(true);
+  };
+
+  const hasAlarms = alarms.length > 0;
+  const activeMeds = medications.filter((m) => m.active);
+  const hasMeds = activeMeds.length > 0;
+
+  const sectionOrder: AlarmType[] = ['wakeup', 'workout', 'medication'];
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Alarms</Text>
-    </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Alarms</Text>
+        <Pressable
+          onPress={activeSegment === 0 ? handleOpenAlarmForm : handleOpenMedForm}
+          style={styles.addBtn}
+          hitSlop={8}
+        >
+          <Plus size={22} color={colors.textPrimary} strokeWidth={2.5} />
+        </Pressable>
+      </View>
+
+      {/* Segmented Control */}
+      <View style={styles.segmentWrapper}>
+        <SegmentedControl
+          segments={[...SEGMENTS]}
+          activeIndex={activeSegment}
+          onChange={setActiveSegment}
+        />
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {activeSegment === 0 ? (
+          /* ── Alarms Segment ────────────────────── */
+          hasAlarms ? (
+            sectionOrder.map((type) => {
+              const alarmsForType = groupedAlarms[type];
+              if (alarmsForType.length === 0) return null;
+              const config = SECTION_CONFIG[type];
+              const IconComp = config.icon;
+              return (
+                <View key={type} style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <IconComp size={16} color={config.color} strokeWidth={2} />
+                    <Text style={[styles.sectionTitle, { color: config.color }]}>
+                      {config.label}
+                    </Text>
+                  </View>
+                  {alarmsForType.map((alarm, index) => (
+                    <AlarmCard
+                      key={alarm.id}
+                      alarm={alarm}
+                      onToggle={toggleAlarm}
+                      onDelete={deleteAlarm}
+                      animationIndex={index}
+                    />
+                  ))}
+                </View>
+              );
+            })
+          ) : (
+            <EmptyState
+              icon={Bell}
+              message="No alarms yet"
+              actionLabel="Add Alarm"
+              onAction={handleOpenAlarmForm}
+            />
+          )
+        ) : (
+          /* ── Medications Segment ───────────────── */
+          hasMeds ? (
+            <>
+              {/* Streak Card */}
+              <Card variant="tinted" tintColor={colors.alarmMedication} style={styles.streakCard}>
+                <View style={styles.streakRow}>
+                  <View style={styles.streakIconWrap}>
+                    <Flame size={28} color={colors.alarmMedication} strokeWidth={2} />
+                  </View>
+                  <View style={styles.streakInfo}>
+                    <View style={styles.streakNumberRow}>
+                      <MonoText size={36} weight="bold" color={colors.textPrimary}>
+                        {streak}
+                      </MonoText>
+                      <Text style={styles.streakLabel}>day streak</Text>
+                    </View>
+                    <Text style={styles.streakMotivation}>
+                      {streak === 0
+                        ? 'Take all your meds today to start a streak!'
+                        : streak < 7
+                          ? 'Keep it up! Build that habit.'
+                          : 'Amazing consistency!'}
+                    </Text>
+                  </View>
+                </View>
+              </Card>
+
+              {/* Today's Medications */}
+              {todaysMeds.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitlePlain}>Today</Text>
+                  <MedicationChecklist medications={todaysMeds} onLogDose={logDose} />
+                </View>
+              )}
+
+              {/* Calendar Heatmap */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitlePlain}>Adherence</Text>
+                <CalendarHeatmap data={calendarData} />
+              </View>
+            </>
+          ) : (
+            <EmptyState
+              icon={Pill}
+              message="No medications tracked"
+              actionLabel="Add Medication"
+              onAction={handleOpenMedForm}
+            />
+          )
+        )}
+      </ScrollView>
+
+      {/* Alarm Form Bottom Sheet */}
+      <AlarmForm
+        isOpen={showAlarmForm}
+        onClose={() => setShowAlarmForm(false)}
+        onSave={addAlarm}
+      />
+
+      {/* Medication Form Bottom Sheet */}
+      <BottomSheet isOpen={showMedForm} onClose={() => setShowMedForm(false)} snapPoints={['70%']}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.formTitle}>New Medication</Text>
+
+          <View style={styles.formSection}>
+            <Text style={styles.formLabel}>Name</Text>
+            <TextInput
+              style={styles.textInput}
+              value={medName}
+              onChangeText={setMedName}
+              placeholder="Medication Name"
+              placeholderTextColor={colors.textTertiary}
+            />
+          </View>
+
+          <View style={styles.formSection}>
+            <Text style={styles.formLabel}>Dosage</Text>
+            <TextInput
+              style={styles.textInput}
+              value={medDosage}
+              onChangeText={setMedDosage}
+              placeholder="e.g. 500mg"
+              placeholderTextColor={colors.textTertiary}
+            />
+          </View>
+
+          <View style={styles.formSection}>
+            <Text style={styles.formLabel}>Frequency</Text>
+            <SegmentedControl
+              segments={[...FREQ_SEGMENTS]}
+              activeIndex={medFreqIndex}
+              onChange={handleFreqChange}
+            />
+          </View>
+
+          <View style={styles.formSection}>
+            <Text style={styles.formLabel}>Time Slots</Text>
+            {medTimes.map((time, idx) => (
+              <View key={idx} style={styles.timeSlotRow}>
+                <MonoText size={14} color={colors.textPrimary}>{time}</MonoText>
+              </View>
+            ))}
+          </View>
+
+          <Button
+            variant="accent"
+            accentColor={colors.alarmMedication}
+            label="Add Medication"
+            onPress={handleAddMed}
+            disabled={!medName.trim() || !medDosage.trim()}
+            style={styles.formSaveBtn}
+          />
+        </ScrollView>
+      </BottomSheet>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0A0A0F', alignItems: 'center', justifyContent: 'center' },
-  text: { color: '#E8E4DE', fontFamily: 'DMSans_700Bold', fontSize: 24 },
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  title: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 28,
+    color: colors.textPrimary,
+  },
+  addBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  segmentWrapper: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing['4xl'],
+  },
+  section: {
+    marginBottom: spacing['2xl'],
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  sectionTitle: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 14,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sectionTitlePlain: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 16,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+  },
+  streakCard: {
+    marginBottom: spacing['2xl'],
+  },
+  streakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  streakIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: `${colors.alarmMedication}1A`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  streakInfo: {
+    flex: 1,
+  },
+  streakNumberRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.sm,
+  },
+  streakLabel: {
+    fontFamily: 'DMSans_500Medium',
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  streakMotivation: {
+    fontFamily: 'DMSans_400Regular',
+    fontSize: 13,
+    color: colors.textTertiary,
+    marginTop: 2,
+  },
+  // Medication Form
+  formTitle: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 20,
+    color: colors.textPrimary,
+    marginBottom: spacing.xl,
+  },
+  formSection: {
+    marginBottom: spacing['2xl'],
+  },
+  formLabel: {
+    fontFamily: 'DMSans_600SemiBold',
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  textInput: {
+    fontFamily: 'DMSans_400Regular',
+    fontSize: 15,
+    color: colors.textPrimary,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    minHeight: 48,
+  },
+  timeSlotRow: {
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  formSaveBtn: {
+    marginTop: spacing.sm,
+    marginBottom: spacing['4xl'],
+  },
 });
