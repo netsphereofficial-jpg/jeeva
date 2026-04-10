@@ -50,15 +50,7 @@ export const useTemplateStore = create<TemplateState>()(
 
       getTodaysTemplate: (): WorkoutTemplate | undefined => {
         const today = new Date().getDay(); // 0=Sun
-        // Templates don't have scheduledDays in Phase 1 types, so we check
-        // if the template has a color matching the day (workaround) or just
-        // return undefined. We'll add scheduledDays support:
-        return get().templates.find((t) => {
-          // Use optional property access for scheduledDays
-          const scheduled = (t as WorkoutTemplate & { scheduledDays?: number[] })
-            .scheduledDays;
-          return scheduled?.includes(today);
-        });
+        return get().templates.find((t) => t.scheduledDays?.includes(today));
       },
     }),
     {

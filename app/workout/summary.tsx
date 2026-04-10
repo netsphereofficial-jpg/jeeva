@@ -109,6 +109,7 @@ export default function WorkoutSummaryScreen() {
     createTemplate({
       name: templateName.trim(),
       exercises,
+      scheduledDays: selectedDays.length > 0 ? selectedDays : undefined,
     });
 
     setShowTemplateSheet(false);

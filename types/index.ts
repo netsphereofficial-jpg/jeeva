@@ -41,6 +41,8 @@ export type Equipment =
 
 export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
 
+export type SplitCategory = 'push' | 'pull' | 'legs' | null;
+
 export interface Exercise {
   id: string;
   name: string;
@@ -48,6 +50,7 @@ export interface Exercise {
   secondaryMuscles: MuscleGroup[];
   equipment: Equipment;
   difficulty: Difficulty;
+  split?: SplitCategory;
   instructions?: string;
   imageUrl?: string;
 }
@@ -120,6 +123,7 @@ export interface WorkoutTemplate {
   lastPerformed?: number;
   timesPerformed: number;
   estimatedDurationMin: number;
+  scheduledDays?: number[];
   color?: string;
 }
 
@@ -269,4 +273,23 @@ export interface ProgressionSuggestionV2 {
   currentWeight: number;
   suggestedWeight: number;
   reason: 'increase' | 'decrease' | 'maintain';
+}
+
+// ── Programs ────────────────────────────────────────────────────
+
+export interface ProgramDay {
+  name: string;
+  description?: string;
+  exerciseIds: string[];
+  targetSets: number;
+  targetReps: number;
+}
+
+export interface Program {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  splitType: string;
+  days: ProgramDay[];
 }
