@@ -38,12 +38,14 @@ export default function AlarmRingScreen() {
     minute?: string;
     label?: string;
     type?: string;
+    sound?: string;
   }>();
 
   const hour = params.hour ? parseInt(params.hour, 10) : new Date().getHours();
   const minute = params.minute ? parseInt(params.minute, 10) : new Date().getMinutes();
   const label = params.label || 'Alarm';
   const type = params.type || 'wakeup';
+  const soundId = params.sound || 'gentle';
 
   const timeStr = formatTime12h(hour, minute);
 
@@ -55,8 +57,8 @@ export default function AlarmRingScreen() {
   const glowOpacity = useSharedValue(0.3);
 
   useEffect(() => {
-    // Start alarm sound + vibration
-    startAlarmSound();
+    // Start alarm sound + vibration with selected tone
+    startAlarmSound(soundId);
 
     // Pulsing rings — staggered
     pulse1.value = withRepeat(

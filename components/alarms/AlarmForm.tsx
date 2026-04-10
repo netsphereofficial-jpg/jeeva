@@ -6,9 +6,12 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { NumberInput } from '@/components/ui/NumberInput';
 import { Button } from '@/components/ui/Button';
 import { MonoText } from '@/components/ui/MonoText';
+import { AlarmSoundPicker } from '@/components/alarms/AlarmSoundPicker';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { opacity } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
+import { DEFAULT_ALARM_SOUND } from '@/data/alarmSounds';
+import { stopPreview } from '@/services/alarmSound';
 import type { Alarm, AlarmType } from '@/types';
 
 interface AlarmFormProps {
@@ -38,6 +41,7 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
   const [type, setType] = useState<AlarmType>('wakeup');
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>([1, 2, 3, 4, 5]);
   const [snoozeDuration, setSnoozeDuration] = useState<5 | 10>(5);
+  const [soundId, setSoundId] = useState(DEFAULT_ALARM_SOUND);
 
   const TYPE_OPTIONS: { type: AlarmType; icon: typeof Sun; color: string; label: string }[] = useMemo(() => [
     { type: 'wakeup', icon: Sun, color: colors.alarmWakeup, label: 'Wake-Up' },
@@ -76,6 +80,7 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
       setType(editAlarm.type);
       setDaysOfWeek(editAlarm.daysOfWeek);
       setSnoozeDuration(editAlarm.snoozeDurationMin as 5 | 10);
+      setSoundId(editAlarm.sound ?? DEFAULT_ALARM_SOUND);
     } else {
       setHour(6);
       setMinute(30);
@@ -84,7 +89,11 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
       setType('wakeup');
       setDaysOfWeek([1, 2, 3, 4, 5]);
       setSnoozeDuration(5);
+      setSoundId(DEFAULT_ALARM_SOUND);
     }
+
+    // Stop any playing preview when form opens/closes
+    return () => { stopPreview(); };
   }, [editAlarm, isOpen]);
 
   const toggleDay = (dayIndex: number) => {
@@ -107,6 +116,7 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
+    stopPreview(); // Stop any preview before saving
     onSave({
       type,
       label,
@@ -114,6 +124,7 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
       minute,
       enabled: true,
       daysOfWeek,
+      sound: soundId,
       vibrate: true,
       snoozeEnabled: true,
       snoozeDurationMin: snoozeDuration,
@@ -286,6 +297,15 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
               );
             })}
           </View>
+        </View>
+
+        {/* Alarm Sound */}
+        <View style={styles.section}>
+          <Text style={dynamicStyles.sectionLabel}>Alarm Sound</Text>
+          <AlarmSoundPicker
+            selectedSoundId={soundId}
+            onSelect={setSoundId}
+          />
         </View>
 
         {/* Snooze */}
