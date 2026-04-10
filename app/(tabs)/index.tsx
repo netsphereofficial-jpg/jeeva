@@ -8,9 +8,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Sun, Sunset, Moon, Settings, Dumbbell } from 'lucide-react-native';
+import { Sun, Sunset, Moon, Settings, Dumbbell, Play } from 'lucide-react-native';
 import { Pressable, Platform } from 'react-native';
-import { shadows, colorGlow } from '@/theme/shadows';
+import { colorGlow } from '@/theme/shadows';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { QuickStats } from '@/components/dashboard/QuickStats';
@@ -35,7 +36,7 @@ function getFormattedDate(): string {
 }
 
 export default function DashboardScreen() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -145,19 +146,29 @@ export default function DashboardScreen() {
         <View style={styles.bottomPadding} />
       </ScrollView>
 
-      {/* Floating Start Workout Button */}
+      {/* Floating Start Workout Button — Premium FAB */}
       <Animated.View
-        entering={FadeInDown.delay(500).duration(400)}
-        style={[styles.fabContainer]}
+        entering={FadeInDown.delay(500).duration(400).springify().damping(12)}
+        style={styles.fabContainer}
       >
         <Pressable
           onPress={() => {
             if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             router.push('/workout/new');
           }}
-          style={[styles.fab, { backgroundColor: colors.primary, ...colorGlow(colors.primary, 0.4) }]}
+          style={[styles.fab, colorGlow(colors.primary, 0.5)]}
         >
-          <Dumbbell size={24} color={colors.background} strokeWidth={2.5} />
+          <LinearGradient
+            colors={[colors.primary, '#FF8C42', colors.primary]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.fabGradient}
+          >
+            <Dumbbell size={20} color={isDark ? '#0A0A0F' : '#FFFFFF'} strokeWidth={2.5} />
+            <Text style={[styles.fabText, { color: isDark ? '#0A0A0F' : '#FFFFFF' }]}>
+              Start Workout
+            </Text>
+          </LinearGradient>
         </Pressable>
       </Animated.View>
     </SafeAreaView>
@@ -205,10 +216,21 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   fab: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    borderRadius: 28,
+    overflow: 'hidden',
+  },
+  fabGradient: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 10,
+    paddingHorizontal: 28,
+    height: 56,
+    borderRadius: 28,
+  },
+  fabText: {
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
 });
