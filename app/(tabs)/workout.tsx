@@ -21,6 +21,7 @@ import { MuscleGroupChart } from '@/components/workout/MuscleGroupChart';
 import { PRTimeline } from '@/components/workout/PRTimeline';
 import { WorkoutStreak } from '@/components/workout/WorkoutStreak';
 import { WorkoutHeatmap } from '@/components/workout/WorkoutHeatmap';
+import { WorkoutCalendar } from '@/components/workout/WorkoutCalendar';
 import {
   getWeeklyVolume,
   getMuscleGroupDistribution,
@@ -49,7 +50,7 @@ function formatDuration(seconds: number): string {
   return `${m}m`;
 }
 
-const SEGMENTS = ['History', 'Analytics'];
+const SEGMENTS = ['History', 'Analytics', 'Calendar'];
 
 export default function WorkoutTabScreen() {
   const { colors } = useAppTheme();
@@ -191,7 +192,9 @@ export default function WorkoutTabScreen() {
         />
       </View>
 
-      {activeSegment === 0 ? (
+      {activeSegment === 2 ? (
+        <CalendarView history={history} />
+      ) : activeSegment === 0 ? (
         <FlatList
           data={history}
           keyExtractor={(item) => item.id}
@@ -256,6 +259,26 @@ export default function WorkoutTabScreen() {
         </ScrollView>
       )}
     </SafeAreaView>
+  );
+}
+
+function CalendarView({ history }: { history: CompletedWorkout[] }) {
+  const now = new Date();
+  const [month, setMonth] = React.useState(now.getMonth());
+  const [year, setYear] = React.useState(now.getFullYear());
+
+  return (
+    <ScrollView
+      contentContainerStyle={styles.analyticsContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <WorkoutCalendar
+        history={history}
+        month={month}
+        year={year}
+        onMonthChange={(m, y) => { setMonth(m); setYear(y); }}
+      />
+    </ScrollView>
   );
 }
 

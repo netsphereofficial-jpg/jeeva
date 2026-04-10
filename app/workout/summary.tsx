@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,21 +7,29 @@ import {
   Pressable,
   StyleSheet,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import * as Sharing from 'expo-sharing';
+import * as MediaLibrary from 'expo-media-library';
+import { captureRef } from 'react-native-view-shot';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   CheckCircle,
   Clock,
   TrendingUp,
   Hash,
   Trophy,
+  Share2,
+  Download,
 } from 'lucide-react-native';
 import { Card } from '@/components/ui/Card';
 import { MonoText } from '@/components/ui/MonoText';
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { ShareCard } from '@/components/workout/ShareCard';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -50,6 +58,9 @@ export default function WorkoutSummaryScreen() {
   const [showTemplateSheet, setShowTemplateSheet] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
+  const [isSharing, setIsSharing] = useState(false);
+
+  const shareCardRef = useRef<View>(null);
 
   const lastWorkout = history[0] ?? null;
 
@@ -71,6 +82,78 @@ export default function WorkoutSummaryScreen() {
     }
     router.replace('/(tabs)');
   };
+
+  const captureShareCard = useCallback(async (): Promise<string | null> => {
+    if (!shareCardRef.current) return null;
+    try {
+      const uri = await captureRef(shareCardRef, {
+        format: 'png',
+        quality: 1,
+      });
+      return uri;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const handleShare = useCallback(async () => {
+    if (isSharing) return;
+    setIsSharing(true);
+
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+
+    try {
+      const uri = await captureShareCard();
+      if (!uri) {
+        Alert.alert('Error', 'Could not generate share image.');
+        return;
+      }
+      await Sharing.shareAsync(uri, { mimeType: 'image/png' });
+    } catch {
+      Alert.alert('Error', 'Failed to share workout.');
+    } finally {
+      setIsSharing(false);
+    }
+  }, [isSharing, captureShareCard]);
+
+  const handleSaveToGallery = useCallback(async () => {
+    if (isSharing) return;
+    setIsSharing(true);
+
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please allow access to save images.',
+        );
+        return;
+      }
+
+      const uri = await captureShareCard();
+      if (!uri) {
+        Alert.alert('Error', 'Could not generate image.');
+        return;
+      }
+
+      await MediaLibrary.saveToLibraryAsync(uri);
+
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      Alert.alert('Saved', 'Workout card saved to your gallery!');
+    } catch {
+      Alert.alert('Error', 'Failed to save image.');
+    } finally {
+      setIsSharing(false);
+    }
+  }, [isSharing, captureShareCard]);
 
   const handleSaveTemplate = () => {
     if (Platform.OS !== 'web') {
@@ -219,6 +302,11 @@ export default function WorkoutSummaryScreen() {
     dayButtonTextActive: {
       color: colors.primary,
     },
+    shareButtonLabel: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 16,
+      color: colors.background,
+    },
   }), [colors]);
 
   if (!lastWorkout) {
@@ -317,14 +405,56 @@ export default function WorkoutSummaryScreen() {
         </View>
 
         <View style={styles.actions}>
-          <Button
-            variant="secondary"
-            label="Save as Template"
-            onPress={handleSaveTemplate}
-          />
+          {/* Share Workout button with gradient background */}
+          <Pressable
+            onPress={handleShare}
+            disabled={isSharing}
+            style={({ pressed }) => [
+              styles.shareButton,
+              pressed && styles.shareButtonPressed,
+              isSharing && styles.disabled,
+            ]}
+          >
+            <LinearGradient
+              colors={[colors.primary, '#FF8C42']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.shareButtonGradient}
+            >
+              <Share2 size={18} color={colors.background} strokeWidth={2.5} />
+              <Text style={dynamicStyles.shareButtonLabel}>Share Workout</Text>
+            </LinearGradient>
+          </Pressable>
+
+          <View style={styles.secondaryActions}>
+            <Button
+              variant="secondary"
+              label="Save to Gallery"
+              onPress={handleSaveToGallery}
+              icon={<Download size={16} color={colors.textPrimary} strokeWidth={2} />}
+              disabled={isSharing}
+              style={styles.halfButton}
+            />
+            <Button
+              variant="secondary"
+              label="Save as Template"
+              onPress={handleSaveTemplate}
+              style={styles.halfButton}
+            />
+          </View>
+
           <Button variant="primary" label="Done" onPress={handleDone} />
         </View>
       </ScrollView>
+
+      {/* Hidden ShareCard for capture — positioned off-screen */}
+      <View style={styles.hiddenShareCard} pointerEvents="none">
+        <ShareCard
+          ref={shareCardRef}
+          workout={lastWorkout}
+          prCount={prCount}
+        />
+      </View>
 
       <BottomSheet
         isOpen={showTemplateSheet}
@@ -418,5 +548,37 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: spacing.sm,
+  },
+  shareButton: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  shareButtonPressed: {
+    opacity: 0.85,
+  },
+  shareButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+  },
+  secondaryActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  halfButton: {
+    flex: 1,
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+  hiddenShareCard: {
+    position: 'absolute',
+    left: -9999,
+    top: -9999,
+    opacity: 0,
   },
 });
