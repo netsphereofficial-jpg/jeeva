@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Clock, Plus, Dumbbell, Heart, Sparkles, Star } from 'lucide-react-native';
+import { Clock, Plus, Dumbbell, Heart, Sparkles, Star, Pause, Play } from 'lucide-react-native';
 import { ExerciseCard } from '@/components/workout/ExerciseCard';
 import { ExerciseFilters } from '@/components/workout/ExerciseFilters';
 import { RestTimer } from '@/components/workout/RestTimer';
@@ -75,6 +75,8 @@ export default function ActiveWorkoutScreen() {
     updateExerciseNotes,
     skipRest,
     finishWorkout,
+    pause,
+    resume,
   } = useWorkout();
 
   const templates = useTemplateStore((s) => s.templates);
@@ -258,12 +260,28 @@ export default function ActiveWorkoutScreen() {
             {workout.name}
           </Text>
         </View>
-        <View style={dynamicStyles.timerBadge}>
-          <Clock size={14} color={colors.primary} strokeWidth={2} />
+        <Pressable
+          onPress={() => {
+            if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            if (workout.status === 'paused') resume();
+            else pause();
+          }}
+          style={dynamicStyles.timerBadge}
+          accessibilityLabel={workout.status === 'paused' ? 'Resume workout' : 'Pause workout'}
+          accessibilityRole="button"
+        >
+          {workout.status === 'paused' ? (
+            <Play size={14} color={colors.primary} strokeWidth={2} fill={colors.primary} />
+          ) : (
+            <Clock size={14} color={colors.primary} strokeWidth={2} />
+          )}
           <MonoText size={14} color={colors.primary}>
             {formatElapsedTime(elapsedTime)}
           </MonoText>
-        </View>
+          {workout.status === 'paused' && (
+            <MonoText size={10} color={colors.textTertiary}>PAUSED</MonoText>
+          )}
+        </Pressable>
       </View>
 
       <ScrollView
