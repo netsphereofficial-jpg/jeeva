@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Wifi, WifiOff } from 'lucide-react-native';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { spacing } from '@/theme/spacing';
 
 interface ConnectionBannerProps {
@@ -19,31 +19,59 @@ export function ConnectionBanner({
   onConnect,
   platformName,
 }: ConnectionBannerProps) {
-  const tintColor = isConnected ? colors.health : '#F59E0B';
+  const { colors } = useAppTheme();
+  const tintColor = isConnected ? colors.health : colors.amber;
+
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    iconContainer: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: colors.surfaceGlass,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: spacing.md,
+    },
+    title: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 14,
+      color: colors.textPrimary,
+    },
+    titleDisconnected: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 14,
+      color: colors.amber,
+    },
+    subtitle: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 12,
+      color: colors.textSecondary,
+    },
+  }), [colors]);
 
   return (
     <Card variant="tinted" tintColor={tintColor} animationIndex={0}>
       <View style={styles.row}>
-        <View style={styles.iconContainer}>
+        <View style={dynamicStyles.iconContainer}>
           {isConnected ? (
             <Wifi size={18} color={colors.health} strokeWidth={2} />
           ) : (
-            <WifiOff size={18} color="#F59E0B" strokeWidth={2} />
+            <WifiOff size={18} color={colors.amber} strokeWidth={2} />
           )}
         </View>
 
         <View style={styles.textContainer}>
           {isConnected ? (
             <>
-              <Text style={styles.title}>Connected to {platformName}</Text>
+              <Text style={dynamicStyles.title}>Connected to {platformName}</Text>
               {lastSynced && (
-                <Text style={styles.subtitle}>Last synced: {lastSynced}</Text>
+                <Text style={dynamicStyles.subtitle}>Last synced: {lastSynced}</Text>
               )}
             </>
           ) : (
             <>
-              <Text style={styles.titleDisconnected}>Not Connected</Text>
-              <Text style={styles.subtitle}>
+              <Text style={dynamicStyles.titleDisconnected}>Not Connected</Text>
+              <Text style={dynamicStyles.subtitle}>
                 Connect to {platformName} for health data
               </Text>
             </>
@@ -70,33 +98,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
   textContainer: {
     flex: 1,
     gap: 2,
-  },
-  title: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 14,
-    color: colors.textPrimary,
-  },
-  titleDisconnected: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 14,
-    color: '#F59E0B',
-  },
-  subtitle: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 12,
-    color: colors.textSecondary,
   },
   dot: {
     width: 8,

@@ -1,24 +1,18 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Moon } from 'lucide-react-native';
 import { Card } from '@/components/ui/Card';
 import { MonoText } from '@/components/ui/MonoText';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useHealthStore } from '@/stores/healthStore';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { sleepStageColors, sleepStageColorsLight, opacity } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
 import type { SleepStage } from '@/types';
 
 interface SleepCardProps {
   animationIndex?: number;
 }
-
-const STAGE_COLORS: Record<SleepStage, string> = {
-  deep: '#6D28D9',
-  rem: '#8B5CF6',
-  light: '#A78BFA',
-  awake: 'rgba(255,255,255,0.08)',
-};
 
 const STAGE_LABELS: Record<SleepStage, string> = {
   deep: 'Deep',
@@ -28,13 +22,43 @@ const STAGE_LABELS: Record<SleepStage, string> = {
 };
 
 export function SleepCard({ animationIndex = 0 }: SleepCardProps) {
+  const { colors, isDark } = useAppTheme();
   const healthData = useHealthStore((s) => s.data);
+
+  const stageColors = isDark ? sleepStageColors : sleepStageColorsLight;
 
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
   const sleepData = healthData.sleep.find((s) => s.date === todayStr)
     ?? (healthData.sleep.length > 0 ? healthData.sleep[healthData.sleep.length - 1] : null);
+
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    headerLabel: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 15,
+      color: colors.textPrimary,
+    },
+    qualityBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      backgroundColor: `rgba(139, 92, 246, ${opacity['12']})`,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: 8,
+    },
+    qualityLabel: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 12,
+      color: colors.textSecondary,
+    },
+    legendText: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 12,
+      color: colors.textSecondary,
+    },
+  }), [colors]);
 
   if (!sleepData) {
     return (
@@ -46,7 +70,7 @@ export function SleepCard({ animationIndex = 0 }: SleepCardProps) {
       >
         <View style={styles.header}>
           <Moon size={18} color={colors.sleep} strokeWidth={2} />
-          <Text style={styles.headerLabel}>Sleep</Text>
+          <Text style={dynamicStyles.headerLabel}>Sleep</Text>
         </View>
         <EmptyState icon={Moon} message="No sleep data yet" />
       </Card>
@@ -83,7 +107,7 @@ export function SleepCard({ animationIndex = 0 }: SleepCardProps) {
       {/* Header */}
       <View style={styles.header}>
         <Moon size={18} color={colors.sleep} strokeWidth={2} />
-        <Text style={styles.headerLabel}>Sleep</Text>
+        <Text style={dynamicStyles.headerLabel}>Sleep</Text>
       </View>
 
       {/* Duration + Quality */}
@@ -91,11 +115,11 @@ export function SleepCard({ animationIndex = 0 }: SleepCardProps) {
         <MonoText size={28} weight="bold">
           {durationText}
         </MonoText>
-        <View style={styles.qualityBadge}>
+        <View style={dynamicStyles.qualityBadge}>
           <MonoText size={14} weight="bold" color={colors.sleep}>
             {sleepData.quality}%
           </MonoText>
-          <Text style={styles.qualityLabel}>quality</Text>
+          <Text style={dynamicStyles.qualityLabel}>quality</Text>
         </View>
       </View>
 
@@ -111,7 +135,7 @@ export function SleepCard({ animationIndex = 0 }: SleepCardProps) {
                 styles.stageSegment,
                 {
                   flex: fraction,
-                  backgroundColor: STAGE_COLORS[stage],
+                  backgroundColor: stageColors[stage],
                 },
               ]}
             />
@@ -130,9 +154,9 @@ export function SleepCard({ animationIndex = 0 }: SleepCardProps) {
           return (
             <View key={stage} style={styles.legendItem}>
               <View
-                style={[styles.legendDot, { backgroundColor: STAGE_COLORS[stage] }]}
+                style={[styles.legendDot, { backgroundColor: stageColors[stage] }]}
               />
-              <Text style={styles.legendText}>
+              <Text style={dynamicStyles.legendText}>
                 {STAGE_LABELS[stage]}
               </Text>
               <MonoText size={11} color={colors.textSecondary}>
@@ -156,30 +180,11 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.lg,
   },
-  headerLabel: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 15,
-    color: colors.textPrimary,
-  },
   durationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.lg,
-  },
-  qualityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: 'rgba(139, 92, 246, 0.12)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 8,
-  },
-  qualityLabel: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 12,
-    color: colors.textSecondary,
   },
   stageBar: {
     flexDirection: 'row',
@@ -206,10 +211,5 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-  },
-  legendText: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 12,
-    color: colors.textSecondary,
   },
 });

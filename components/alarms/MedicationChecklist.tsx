@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import Animated, {
   FadeInDown,
@@ -12,7 +12,7 @@ import * as Haptics from 'expo-haptics';
 import { Check } from 'lucide-react-native';
 import { MonoText } from '@/components/ui/MonoText';
 import { Tag } from '@/components/ui/Tag';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { radius, spacing } from '@/theme/spacing';
 import type { MedLogStatus } from '@/types';
 
@@ -36,9 +36,12 @@ function ChecklistItem({
   onLogDose: (medId: string, timeSlot: string) => void;
   index: number;
 }) {
+  const { colors, isDark } = useAppTheme();
   const isChecked = item.status === 'taken';
   const checkScale = useSharedValue(isChecked ? 1 : 0);
   const checkColor = useSharedValue(isChecked ? 1 : 0);
+
+  const uncheckedBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
 
   const handleCheck = () => {
     if (isChecked) return;
@@ -58,7 +61,7 @@ function ChecklistItem({
     backgroundColor: interpolateColor(
       checkColor.value,
       [0, 1],
-      ['rgba(255,255,255,0.06)', colors.alarmMedication],
+      [uncheckedBg, colors.alarmMedication],
     ),
     borderColor: interpolateColor(
       checkColor.value,
@@ -67,13 +70,34 @@ function ChecklistItem({
     ),
   }));
 
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    item: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.surfaceGlass,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+    },
+    medName: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 15,
+      color: colors.textPrimary,
+    },
+    textDimmed: {
+      color: colors.textSecondary,
+    },
+  }), [colors]);
+
   return (
     <Animated.View
       entering={FadeInDown.delay(index * 60).duration(400)}
-      style={[styles.item, isChecked && styles.itemChecked]}
+      style={[dynamicStyles.item, isChecked && styles.itemChecked]}
     >
       <View style={styles.itemInfo}>
-        <Text style={[styles.medName, isChecked && styles.textDimmed]}>
+        <Text style={[dynamicStyles.medName, isChecked && dynamicStyles.textDimmed]}>
           {item.medication.name}
         </Text>
         <View style={styles.itemMeta}>
@@ -85,7 +109,7 @@ function ChecklistItem({
       </View>
       <Pressable onPress={handleCheck}>
         <Animated.View style={[styles.checkbox, checkboxAnimatedStyle]}>
-          {isChecked && <Check size={16} color="#0A0A0F" strokeWidth={3} />}
+          {isChecked && <Check size={16} color={isDark ? '#0A0A0F' : '#FFFFFF'} strokeWidth={3} />}
         </Animated.View>
       </Pressable>
     </Animated.View>
@@ -111,16 +135,6 @@ const styles = StyleSheet.create({
   container: {
     gap: spacing.sm,
   },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-  },
   itemChecked: {
     opacity: 0.6,
   },
@@ -128,18 +142,10 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.sm,
   },
-  medName: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 15,
-    color: colors.textPrimary,
-  },
   itemMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  textDimmed: {
-    color: colors.textSecondary,
   },
   checkbox: {
     width: 28,

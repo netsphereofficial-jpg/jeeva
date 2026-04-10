@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { MonoText } from '@/components/ui/MonoText';
 import { Tag } from '@/components/ui/Tag';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { opacity } from '@/theme/colors';
 import { spacing, radius } from '@/theme/spacing';
 
 interface TrendData {
@@ -22,6 +23,14 @@ interface MetricCardProps {
   animationIndex?: number;
 }
 
+/** Convert a hex color like '#FF6B35' to an rgba string */
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export function MetricCard({
   title,
   value,
@@ -32,12 +41,38 @@ export function MetricCard({
   comingSoon = false,
   animationIndex = 0,
 }: MetricCardProps) {
+  const { colors } = useAppTheme();
   const [expanded, setExpanded] = useState(false);
 
   const handlePress = () => {
     if (comingSoon || !trend) return;
     setExpanded((prev) => !prev);
   };
+
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    unit: {
+      fontFamily: 'DMSans_500Medium',
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    title: {
+      fontFamily: 'DMSans_500Medium',
+      fontSize: 13,
+      color: colors.textSecondary,
+    },
+    trendContainer: {
+      marginTop: spacing.lg,
+      paddingTop: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    barLabel: {
+      fontFamily: 'SpaceMono_400Regular',
+      fontSize: 9,
+      color: colors.textTertiary,
+      marginTop: 4,
+    },
+  }), [colors]);
 
   return (
     <Animated.View
@@ -50,8 +85,8 @@ export function MetricCard({
         style={({ pressed }) => [
           styles.container,
           {
-            borderColor: `${color}14`,
-            backgroundColor: `${color}08`,
+            borderColor: hexToRgba(color, opacity['8']),
+            backgroundColor: hexToRgba(color, opacity['4']),
           },
           pressed && !comingSoon && styles.pressed,
           comingSoon && styles.comingSoon,
@@ -59,7 +94,7 @@ export function MetricCard({
       >
         {/* Header Row */}
         <View style={styles.header}>
-          <View style={[styles.iconCircle, { backgroundColor: `${color}1A` }]}>
+          <View style={[styles.iconCircle, { backgroundColor: hexToRgba(color, opacity['10']) }]}>
             <IconComponent
               size={18}
               color={comingSoon ? colors.textTertiary : color}
@@ -81,7 +116,7 @@ export function MetricCard({
           {unit && (
             <Text
               style={[
-                styles.unit,
+                dynamicStyles.unit,
                 comingSoon && { color: colors.textTertiary },
               ]}
             >
@@ -93,7 +128,7 @@ export function MetricCard({
         {/* Title */}
         <Text
           style={[
-            styles.title,
+            dynamicStyles.title,
             comingSoon && { color: colors.textTertiary },
           ]}
         >
@@ -104,9 +139,9 @@ export function MetricCard({
         {expanded && trend && trend.data.length > 0 && (
           <Animated.View
             entering={FadeInDown.duration(250)}
-            style={styles.trendContainer}
+            style={dynamicStyles.trendContainer}
           >
-            <TrendBars data={trend.data} labels={trend.labels} color={color} />
+            <TrendBars data={trend.data} labels={trend.labels} color={color} barLabelStyle={dynamicStyles.barLabel} />
           </Animated.View>
         )}
       </Pressable>
@@ -120,10 +155,12 @@ function TrendBars({
   data,
   labels,
   color,
+  barLabelStyle,
 }: {
   data: number[];
   labels: string[];
   color: string;
+  barLabelStyle: object;
 }) {
   const maxVal = Math.max(...data, 1);
 
@@ -144,7 +181,7 @@ function TrendBars({
                 ]}
               />
             </View>
-            <Text style={styles.barLabel}>
+            <Text style={barLabelStyle}>
               {labels[i] ?? ''}
             </Text>
           </View>
@@ -186,22 +223,6 @@ const styles = StyleSheet.create({
     gap: 4,
     marginBottom: 2,
   },
-  unit: {
-    fontFamily: 'DMSans_500Medium',
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  title: {
-    fontFamily: 'DMSans_500Medium',
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  trendContainer: {
-    marginTop: spacing.lg,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.06)',
-  },
   barsRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -226,11 +247,5 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 3,
     minHeight: 3,
-  },
-  barLabel: {
-    fontFamily: 'SpaceMono_400Regular',
-    fontSize: 9,
-    color: colors.textTertiary,
-    marginTop: 4,
   },
 });

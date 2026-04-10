@@ -3,7 +3,7 @@ import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import { LayoutDashboard, Dumbbell, Bell, Activity } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { Platform, Pressable } from 'react-native';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 function HapticTabButton(props: BottomTabBarButtonProps) {
   return (
@@ -20,6 +20,8 @@ function HapticTabButton(props: BottomTabBarButtonProps) {
 }
 
 export default function TabLayout() {
+  const { colors } = useAppTheme();
+
   return (
     <Tabs
       screenOptions={{
@@ -27,14 +29,14 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textTertiary,
         tabBarStyle: {
-          backgroundColor: 'rgba(10, 10, 15, 0.95)',
-          borderTopColor: 'rgba(255, 255, 255, 0.05)',
+          backgroundColor: colors.tabBar,
+          borderTopColor: colors.tabBarBorder,
           borderTopWidth: 1,
           paddingTop: 8,
           height: 88,
         },
         tabBarLabelStyle: {
-          fontFamily: 'DMSans_500Medium',
+          fontFamily: 'Outfit_500Medium',
           fontSize: 10,
           marginTop: 4,
         },

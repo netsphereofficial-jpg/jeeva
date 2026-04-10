@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -12,7 +12,8 @@ import { Card } from '@/components/ui/Card';
 import { CircularProgress } from '@/components/ui/CircularProgress';
 import { MonoText } from '@/components/ui/MonoText';
 import { useWaterStore } from '@/stores/waterStore';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { opacity } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
 import { formatNumber } from '@/utils/formatters';
 
@@ -23,6 +24,7 @@ interface WaterTrackerProps {
 const QUICK_AMOUNTS = [150, 250, 500] as const;
 
 export function WaterTracker({ animationIndex = 0 }: WaterTrackerProps) {
+  const { colors } = useAppTheme();
   const addWater = useWaterStore((s) => s.addWater);
   const undoLast = useWaterStore((s) => s.undoLast);
   const entries = useWaterStore((s) => s.entries);
@@ -71,6 +73,43 @@ export function WaterTracker({ animationIndex = 0 }: WaterTrackerProps) {
     undoLast();
   };
 
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    headerLabel: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 15,
+      color: colors.textPrimary,
+    },
+    goalText: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 13,
+      color: colors.textSecondary,
+    },
+    progressBarBg: {
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: colors.border,
+      marginTop: spacing.sm,
+      overflow: 'hidden',
+    },
+    progressBarFill: {
+      height: '100%',
+      borderRadius: 2,
+      backgroundColor: colors.water,
+    },
+    quickButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      paddingVertical: spacing.md,
+      borderRadius: 12,
+      backgroundColor: `rgba(56, 189, 248, ${opacity['8']})`,
+      borderWidth: 1,
+      borderColor: `rgba(56, 189, 248, ${opacity['12']})`,
+    },
+  }), [colors]);
+
   return (
     <Card
       variant="tinted"
@@ -82,7 +121,7 @@ export function WaterTracker({ animationIndex = 0 }: WaterTrackerProps) {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Droplets size={18} color={colors.water} strokeWidth={2} />
-          <Text style={styles.headerLabel}>Hydration</Text>
+          <Text style={dynamicStyles.headerLabel}>Hydration</Text>
         </View>
         <Pressable onPress={handleUndo} hitSlop={12}>
           <Undo2 size={18} color={colors.textTertiary} strokeWidth={2} />
@@ -111,14 +150,14 @@ export function WaterTracker({ animationIndex = 0 }: WaterTrackerProps) {
           <MonoText size={28} weight="bold">
             {formatNumber(total)}
           </MonoText>
-          <Text style={styles.goalText}>
+          <Text style={dynamicStyles.goalText}>
             of {formatNumber(goal)} ml
           </Text>
           {/* Thin progress bar */}
-          <View style={styles.progressBarBg}>
+          <View style={dynamicStyles.progressBarBg}>
             <View
               style={[
-                styles.progressBarFill,
+                dynamicStyles.progressBarFill,
                 { width: `${Math.min(progress * 100, 100)}%` },
               ]}
             />
@@ -131,7 +170,7 @@ export function WaterTracker({ animationIndex = 0 }: WaterTrackerProps) {
         {QUICK_AMOUNTS.map((amount) => (
           <Pressable
             key={amount}
-            style={styles.quickButton}
+            style={dynamicStyles.quickButton}
             onPress={() => handleAdd(amount)}
           >
             <Plus size={14} color={colors.water} strokeWidth={2.5} />
@@ -160,11 +199,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  headerLabel: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 15,
-    color: colors.textPrimary,
-  },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -175,37 +209,8 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.xs,
   },
-  goalText: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  progressBarBg: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    marginTop: spacing.sm,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 2,
-    backgroundColor: colors.water,
-  },
   quickButtons: {
     flexDirection: 'row',
     gap: spacing.sm,
-  },
-  quickButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.md,
-    borderRadius: 12,
-    backgroundColor: 'rgba(56, 189, 248, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.12)',
   },
 });

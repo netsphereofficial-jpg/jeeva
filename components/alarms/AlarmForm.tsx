@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, Platform, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Sun, Dumbbell, Pill } from 'lucide-react-native';
@@ -6,7 +6,8 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { NumberInput } from '@/components/ui/NumberInput';
 import { Button } from '@/components/ui/Button';
 import { MonoText } from '@/components/ui/MonoText';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { opacity } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 import type { Alarm, AlarmType } from '@/types';
 
@@ -18,22 +19,30 @@ interface AlarmFormProps {
 }
 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'] as const;
-
-const TYPE_OPTIONS: { type: AlarmType; icon: typeof Sun; color: string; label: string }[] = [
-  { type: 'wakeup', icon: Sun, color: colors.alarmWakeup, label: 'Wake-Up' },
-  { type: 'workout', icon: Dumbbell, color: colors.alarmWorkout, label: 'Workout' },
-  { type: 'medication', icon: Pill, color: colors.alarmMedication, label: 'Medication' },
-];
-
 const SNOOZE_OPTIONS = [5, 10] as const;
 
+/** hex to rgba helper */
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps) {
+  const { colors, isDark } = useAppTheme();
   const [hour, setHour] = useState(6);
   const [minute, setMinute] = useState(30);
   const [label, setLabel] = useState('');
   const [type, setType] = useState<AlarmType>('wakeup');
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>([1, 2, 3, 4, 5]);
   const [snoozeDuration, setSnoozeDuration] = useState<5 | 10>(5);
+
+  const TYPE_OPTIONS: { type: AlarmType; icon: typeof Sun; color: string; label: string }[] = useMemo(() => [
+    { type: 'wakeup', icon: Sun, color: colors.alarmWakeup, label: 'Wake-Up' },
+    { type: 'workout', icon: Dumbbell, color: colors.alarmWorkout, label: 'Workout' },
+    { type: 'medication', icon: Pill, color: colors.alarmMedication, label: 'Medication' },
+  ], [colors]);
 
   useEffect(() => {
     if (editAlarm) {
@@ -89,14 +98,83 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
 
   const selectedTypeColor = TYPE_OPTIONS.find((t) => t.type === type)?.color ?? colors.primary;
 
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    title: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 20,
+      color: colors.textPrimary,
+      marginBottom: spacing.xl,
+    },
+    sectionLabel: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginBottom: spacing.sm,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    textInput: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 15,
+      color: colors.textPrimary,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      minHeight: 48,
+    },
+    typeCard: {
+      flex: 1,
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceGlass,
+    },
+    typeLabel: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 11,
+      color: colors.textTertiary,
+    },
+    dayCircle: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.surfaceGlassBorder,
+    },
+    dayText: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 13,
+      color: colors.textTertiary,
+    },
+    dayTextActive: {
+      color: isDark ? '#0A0A0F' : '#FFFFFF',
+    },
+    snoozeOption: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceGlass,
+    },
+  }), [colors, isDark]);
+
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} snapPoints={['85%']}>
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
-        <Text style={styles.title}>{editAlarm ? 'Edit Alarm' : 'New Alarm'}</Text>
+        <Text style={dynamicStyles.title}>{editAlarm ? 'Edit Alarm' : 'New Alarm'}</Text>
 
         {/* Time Picker */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Time</Text>
+          <Text style={dynamicStyles.sectionLabel}>Time</Text>
           <View style={styles.timeRow}>
             <View style={styles.timeInput}>
               <NumberInput value={hour} onChange={setHour} min={0} max={23} unit="hr" />
@@ -110,9 +188,9 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
 
         {/* Label */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Label</Text>
+          <Text style={dynamicStyles.sectionLabel}>Label</Text>
           <TextInput
-            style={styles.textInput}
+            style={dynamicStyles.textInput}
             value={label}
             onChangeText={setLabel}
             placeholder="Alarm Label"
@@ -122,7 +200,7 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
 
         {/* Type Selector */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Type</Text>
+          <Text style={dynamicStyles.sectionLabel}>Type</Text>
           <View style={styles.typeRow}>
             {TYPE_OPTIONS.map((option) => {
               const isSelected = type === option.type;
@@ -132,12 +210,12 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
                   key={option.type}
                   onPress={() => selectType(option.type)}
                   style={[
-                    styles.typeCard,
-                    isSelected && { borderColor: option.color, backgroundColor: `${option.color}1A` },
+                    dynamicStyles.typeCard,
+                    isSelected && { borderColor: option.color, backgroundColor: hexToRgba(option.color, opacity['10']) },
                   ]}
                 >
                   <IconComp size={20} color={isSelected ? option.color : colors.textTertiary} strokeWidth={2} />
-                  <Text style={[styles.typeLabel, isSelected && { color: option.color }]}>
+                  <Text style={[dynamicStyles.typeLabel, isSelected && { color: option.color }]}>
                     {option.label}
                   </Text>
                 </Pressable>
@@ -148,7 +226,7 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
 
         {/* Day Toggles */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Repeat</Text>
+          <Text style={dynamicStyles.sectionLabel}>Repeat</Text>
           <View style={styles.daysRow}>
             {DAY_LABELS.map((dayLabel, index) => {
               const isActive = daysOfWeek.includes(index);
@@ -157,11 +235,11 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
                   key={`${dayLabel}-${index}`}
                   onPress={() => toggleDay(index)}
                   style={[
-                    styles.dayCircle,
+                    dynamicStyles.dayCircle,
                     isActive && { backgroundColor: selectedTypeColor },
                   ]}
                 >
-                  <Text style={[styles.dayText, isActive && styles.dayTextActive]}>
+                  <Text style={[dynamicStyles.dayText, isActive && dynamicStyles.dayTextActive]}>
                     {dayLabel}
                   </Text>
                 </Pressable>
@@ -172,7 +250,7 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
 
         {/* Snooze */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Snooze Duration</Text>
+          <Text style={dynamicStyles.sectionLabel}>Snooze Duration</Text>
           <View style={styles.snoozeRow}>
             {SNOOZE_OPTIONS.map((mins) => (
               <Pressable
@@ -184,8 +262,8 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
                   setSnoozeDuration(mins);
                 }}
                 style={[
-                  styles.snoozeOption,
-                  snoozeDuration === mins && { borderColor: selectedTypeColor, backgroundColor: `${selectedTypeColor}1A` },
+                  dynamicStyles.snoozeOption,
+                  snoozeDuration === mins && { borderColor: selectedTypeColor, backgroundColor: hexToRgba(selectedTypeColor, opacity['10']) },
                 ]}
               >
                 <MonoText
@@ -215,22 +293,8 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
-  title: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 20,
-    color: colors.textPrimary,
-    marginBottom: spacing.xl,
-  },
   section: {
     marginBottom: spacing['2xl'],
-  },
-  sectionLabel: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   timeRow: {
     flexDirection: 'row',
@@ -240,69 +304,17 @@ const styles = StyleSheet.create({
   timeInput: {
     flex: 1,
   },
-  textInput: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 15,
-    color: colors.textPrimary,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    minHeight: 48,
-  },
   typeRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-  },
-  typeCard: {
-    flex: 1,
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
-  typeLabel: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 11,
-    color: colors.textTertiary,
   },
   daysRow: {
     flexDirection: 'row',
     gap: spacing.sm,
   },
-  dayCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  dayText: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 13,
-    color: colors.textTertiary,
-  },
-  dayTextActive: {
-    color: '#0A0A0F',
-  },
   snoozeRow: {
     flexDirection: 'row',
     gap: spacing.md,
-  },
-  snoozeOption: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: 'rgba(255,255,255,0.04)',
   },
   saveBtn: {
     marginTop: spacing.sm,

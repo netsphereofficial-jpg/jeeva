@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -31,17 +31,12 @@ import { MedicationChecklist } from '@/components/alarms/MedicationChecklist';
 import { CalendarHeatmap } from '@/components/alarms/CalendarHeatmap';
 import { useAlarms } from '@/hooks/useAlarms';
 import { useMedications } from '@/hooks/useMedications';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { opacity } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 import type { AlarmType, MedFrequency } from '@/types';
 
 const SEGMENTS = ['Alarms', 'Medications'] as const;
-
-const SECTION_CONFIG: Record<AlarmType, { icon: typeof Sun; color: string; label: string }> = {
-  wakeup: { icon: Sun, color: colors.alarmWakeup, label: 'Wake-Up' },
-  workout: { icon: Dumbbell, color: colors.alarmWorkout, label: 'Workout' },
-  medication: { icon: Pill, color: colors.alarmMedication, label: 'Medication' },
-};
 
 const FREQ_SEGMENTS = ['Daily', 'Twice', 'Weekly'] as const;
 const FREQ_MAP: Record<number, MedFrequency> = {
@@ -51,6 +46,7 @@ const FREQ_MAP: Record<number, MedFrequency> = {
 };
 
 export default function AlarmsScreen() {
+  const { colors } = useAppTheme();
   const [activeSegment, setActiveSegment] = useState(0);
   const [showAlarmForm, setShowAlarmForm] = useState(false);
   const [showMedForm, setShowMedForm] = useState(false);
@@ -63,6 +59,12 @@ export default function AlarmsScreen() {
   const [medDosage, setMedDosage] = useState('');
   const [medFreqIndex, setMedFreqIndex] = useState(0);
   const [medTimes, setMedTimes] = useState<string[]>(['08:00']);
+
+  const SECTION_CONFIG: Record<AlarmType, { icon: typeof Sun; color: string; label: string }> = useMemo(() => ({
+    wakeup: { icon: Sun, color: colors.alarmWakeup, label: 'Wake-Up' },
+    workout: { icon: Dumbbell, color: colors.alarmWorkout, label: 'Workout' },
+    medication: { icon: Pill, color: colors.alarmMedication, label: 'Medication' },
+  }), [colors]);
 
   const resetMedForm = () => {
     setMedName('');
@@ -115,14 +117,94 @@ export default function AlarmsScreen() {
 
   const sectionOrder: AlarmType[] = ['wakeup', 'workout', 'medication'];
 
+  /** Helper: hex to rgba for streak icon background */
+  const streakIconBg = useMemo(() => {
+    const hex = colors.alarmMedication;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${opacity['10']})`;
+  }, [colors]);
+
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    title: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 28,
+      color: colors.textPrimary,
+    },
+    addBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.surfaceGlassBorder,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    sectionTitlePlain: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 16,
+      color: colors.textPrimary,
+      marginBottom: spacing.md,
+    },
+    streakLabel: {
+      fontFamily: 'DMSans_500Medium',
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    streakMotivation: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 13,
+      color: colors.textTertiary,
+      marginTop: 2,
+    },
+    formTitle: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 20,
+      color: colors.textPrimary,
+      marginBottom: spacing.xl,
+    },
+    formLabel: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginBottom: spacing.sm,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    textInput: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 15,
+      color: colors.textPrimary,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      minHeight: 48,
+    },
+    timeSlotRow: {
+      backgroundColor: colors.surfaceGlass,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+    },
+  }), [colors]);
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={dynamicStyles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Alarms</Text>
+        <Text style={dynamicStyles.title}>Alarms</Text>
         <Pressable
           onPress={activeSegment === 0 ? handleOpenAlarmForm : handleOpenMedForm}
-          style={styles.addBtn}
+          style={dynamicStyles.addBtn}
           hitSlop={8}
         >
           <Plus size={22} color={colors.textPrimary} strokeWidth={2.5} />
@@ -186,7 +268,7 @@ export default function AlarmsScreen() {
               {/* Streak Card */}
               <Card variant="tinted" tintColor={colors.alarmMedication} style={styles.streakCard}>
                 <View style={styles.streakRow}>
-                  <View style={styles.streakIconWrap}>
+                  <View style={[styles.streakIconWrap, { backgroundColor: streakIconBg }]}>
                     <Flame size={28} color={colors.alarmMedication} strokeWidth={2} />
                   </View>
                   <View style={styles.streakInfo}>
@@ -194,9 +276,9 @@ export default function AlarmsScreen() {
                       <MonoText size={36} weight="bold" color={colors.textPrimary}>
                         {streak}
                       </MonoText>
-                      <Text style={styles.streakLabel}>day streak</Text>
+                      <Text style={dynamicStyles.streakLabel}>day streak</Text>
                     </View>
-                    <Text style={styles.streakMotivation}>
+                    <Text style={dynamicStyles.streakMotivation}>
                       {streak === 0
                         ? 'Take all your meds today to start a streak!'
                         : streak < 7
@@ -210,14 +292,14 @@ export default function AlarmsScreen() {
               {/* Today's Medications */}
               {todaysMeds.length > 0 && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitlePlain}>Today</Text>
+                  <Text style={dynamicStyles.sectionTitlePlain}>Today</Text>
                   <MedicationChecklist medications={todaysMeds} onLogDose={logDose} />
                 </View>
               )}
 
               {/* Calendar Heatmap */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitlePlain}>Adherence</Text>
+                <Text style={dynamicStyles.sectionTitlePlain}>Adherence</Text>
                 <CalendarHeatmap data={calendarData} />
               </View>
             </>
@@ -242,12 +324,12 @@ export default function AlarmsScreen() {
       {/* Medication Form Bottom Sheet */}
       <BottomSheet isOpen={showMedForm} onClose={() => setShowMedForm(false)} snapPoints={['70%']}>
         <ScrollView showsVerticalScrollIndicator={false}>
-          <Text style={styles.formTitle}>New Medication</Text>
+          <Text style={dynamicStyles.formTitle}>New Medication</Text>
 
           <View style={styles.formSection}>
-            <Text style={styles.formLabel}>Name</Text>
+            <Text style={dynamicStyles.formLabel}>Name</Text>
             <TextInput
-              style={styles.textInput}
+              style={dynamicStyles.textInput}
               value={medName}
               onChangeText={setMedName}
               placeholder="Medication Name"
@@ -256,9 +338,9 @@ export default function AlarmsScreen() {
           </View>
 
           <View style={styles.formSection}>
-            <Text style={styles.formLabel}>Dosage</Text>
+            <Text style={dynamicStyles.formLabel}>Dosage</Text>
             <TextInput
-              style={styles.textInput}
+              style={dynamicStyles.textInput}
               value={medDosage}
               onChangeText={setMedDosage}
               placeholder="e.g. 500mg"
@@ -267,7 +349,7 @@ export default function AlarmsScreen() {
           </View>
 
           <View style={styles.formSection}>
-            <Text style={styles.formLabel}>Frequency</Text>
+            <Text style={dynamicStyles.formLabel}>Frequency</Text>
             <SegmentedControl
               segments={[...FREQ_SEGMENTS]}
               activeIndex={medFreqIndex}
@@ -276,9 +358,9 @@ export default function AlarmsScreen() {
           </View>
 
           <View style={styles.formSection}>
-            <Text style={styles.formLabel}>Time Slots</Text>
+            <Text style={dynamicStyles.formLabel}>Time Slots</Text>
             {medTimes.map((time, idx) => (
-              <View key={idx} style={styles.timeSlotRow}>
+              <View key={idx} style={dynamicStyles.timeSlotRow}>
                 <MonoText size={14} color={colors.textPrimary}>{time}</MonoText>
               </View>
             ))}
@@ -299,10 +381,6 @@ export default function AlarmsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -310,19 +388,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
     paddingBottom: spacing.md,
-  },
-  title: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 28,
-    color: colors.textPrimary,
-  },
-  addBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   segmentWrapper: {
     paddingHorizontal: spacing.xl,
@@ -350,12 +415,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  sectionTitlePlain: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 16,
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
-  },
   streakCard: {
     marginBottom: spacing['2xl'],
   },
@@ -368,7 +427,6 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: `${colors.alarmMedication}1A`,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -380,54 +438,9 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     gap: spacing.sm,
   },
-  streakLabel: {
-    fontFamily: 'DMSans_500Medium',
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  streakMotivation: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 13,
-    color: colors.textTertiary,
-    marginTop: 2,
-  },
   // Medication Form
-  formTitle: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 20,
-    color: colors.textPrimary,
-    marginBottom: spacing.xl,
-  },
   formSection: {
     marginBottom: spacing['2xl'],
-  },
-  formLabel: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  textInput: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 15,
-    color: colors.textPrimary,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    minHeight: 48,
-  },
-  timeSlotRow: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
   },
   formSaveBtn: {
     marginTop: spacing.sm,

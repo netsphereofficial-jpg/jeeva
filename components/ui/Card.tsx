@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ViewStyle, StyleSheet } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { colors } from '@/theme/colors';
-import { radius } from '@/theme/spacing';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { radius, spacing } from '@/theme/spacing';
+import { shadows } from '@/theme/shadows';
 
 interface CardProps {
-  variant?: 'default' | 'elevated' | 'tinted';
+  variant?: 'default' | 'elevated' | 'glass' | 'tinted';
   tintColor?: string;
   animationIndex?: number;
   children: React.ReactNode;
@@ -19,7 +20,42 @@ export function Card({
   children,
   style,
 }: CardProps) {
-  const variantStyle = getVariantStyle(variant, tintColor);
+  const { colors } = useAppTheme();
+
+  const variantStyle = useMemo((): ViewStyle => {
+    switch (variant) {
+      case 'elevated':
+        return {
+          backgroundColor: colors.surfaceElevated,
+          borderColor: colors.border,
+          borderWidth: 1,
+          ...shadows.md,
+        };
+      case 'glass':
+        return {
+          backgroundColor: colors.surfaceGlass,
+          borderColor: colors.surfaceGlassBorder,
+          borderWidth: 1,
+        };
+      case 'tinted':
+        return {
+          backgroundColor: tintColor
+            ? `${tintColor}0A` // ~0.04 opacity
+            : colors.surfaceGlass,
+          borderColor: tintColor
+            ? `${tintColor}14` // ~0.08 opacity
+            : colors.border,
+          borderWidth: 1,
+        };
+      case 'default':
+      default:
+        return {
+          backgroundColor: colors.surfaceGlass,
+          borderColor: colors.border,
+          borderWidth: 1,
+        };
+    }
+  }, [variant, tintColor, colors]);
 
   return (
     <Animated.View
@@ -31,41 +67,10 @@ export function Card({
   );
 }
 
-function getVariantStyle(
-  variant: CardProps['variant'],
-  tintColor?: string,
-): ViewStyle {
-  switch (variant) {
-    case 'elevated':
-      return {
-        backgroundColor: colors.surfaceElevated,
-        borderColor: colors.border,
-        borderWidth: 1,
-      };
-    case 'tinted':
-      return {
-        backgroundColor: tintColor
-          ? `${tintColor}0A` // ~0.04 opacity
-          : 'rgba(255,255,255,0.04)',
-        borderColor: tintColor
-          ? `${tintColor}14` // ~0.08 opacity
-          : colors.border,
-        borderWidth: 1,
-      };
-    case 'default':
-    default:
-      return {
-        backgroundColor: 'rgba(255,255,255,0.04)',
-        borderColor: colors.border,
-        borderWidth: 1,
-      };
-  }
-}
-
 const styles = StyleSheet.create({
   base: {
     borderRadius: radius.xl,
-    padding: 16,
+    padding: spacing.lg,
     overflow: 'hidden',
   },
 });

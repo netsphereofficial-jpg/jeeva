@@ -1,12 +1,13 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useEffect, useMemo } from 'react';
+import { View, ViewStyle, StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedProps,
   withSpring,
 } from 'react-native-reanimated';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { colorGlow } from '@/theme/shadows';
 
 interface CircularProgressProps {
   progress: number; // 0-1
@@ -14,6 +15,7 @@ interface CircularProgressProps {
   color: string;
   strokeWidth?: number;
   gradientColors?: [string, string];
+  glow?: boolean;
   children?: React.ReactNode;
 }
 
@@ -25,14 +27,23 @@ export function CircularProgress({
   color,
   strokeWidth = 6,
   gradientColors,
+  glow = false,
   children,
 }: CircularProgressProps) {
+  const { isDark } = useAppTheme();
   const animatedProgress = useSharedValue(0);
 
   const r = (size - strokeWidth) / 2;
   const cx = size / 2;
   const cy = size / 2;
   const circumference = 2 * Math.PI * r;
+
+  const trackColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+  const glowStyle = useMemo((): ViewStyle | undefined => {
+    if (!glow) return undefined;
+    return colorGlow(color, 0.3);
+  }, [glow, color]);
 
   useEffect(() => {
     animatedProgress.value = withSpring(progress, {
@@ -49,7 +60,7 @@ export function CircularProgress({
   const strokeColor = gradientColors ? 'url(#gradient)' : color;
 
   return (
-    <View style={[styles.container, { width: size, height: size }]}>
+    <View style={[styles.container, { width: size, height: size }, glowStyle]}>
       <Svg width={size} height={size}>
         {gradientColors && (
           <Defs>
@@ -64,7 +75,7 @@ export function CircularProgress({
           cx={cx}
           cy={cy}
           r={r}
-          stroke={colors.border}
+          stroke={trackColor}
           strokeWidth={strokeWidth}
           fill="none"
         />

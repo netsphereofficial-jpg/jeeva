@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FlatList, Pressable, Text, View, StyleSheet, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -14,7 +14,7 @@ import {
   Target,
   Zap,
 } from 'lucide-react-native';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { radius, spacing } from '@/theme/spacing';
 import { getExercisesByGroup } from '@/data/exercises';
 import type { MuscleGroupCategory } from '@/types';
@@ -47,6 +47,7 @@ function GroupCard({
   group: (typeof GROUPS)[number];
   onSelect: (g: MuscleGroupCategory) => void;
 }) {
+  const { colors } = useAppTheme();
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -70,16 +71,43 @@ function GroupCard({
     onSelect(group.key);
   };
 
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    card: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.lg,
+      paddingVertical: spacing.xl,
+      paddingHorizontal: spacing.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 100,
+      gap: spacing.sm,
+    },
+    groupName: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 15,
+      color: colors.textPrimary,
+      marginTop: spacing.xs,
+    },
+    exerciseCount: {
+      fontFamily: 'SpaceMono_400Regular',
+      fontSize: 11,
+      color: colors.textTertiary,
+    },
+  }), [colors]);
+
   return (
     <AnimatedPressable
       onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      style={[styles.card, animatedStyle]}
+      style={[dynamicStyles.card, animatedStyle]}
     >
       <Icon size={28} color={colors.primary} strokeWidth={1.8} />
-      <Text style={styles.groupName}>{group.label}</Text>
-      <Text style={styles.exerciseCount}>{count} exercises</Text>
+      <Text style={dynamicStyles.groupName}>{group.label}</Text>
+      <Text style={dynamicStyles.exerciseCount}>{count} exercises</Text>
     </AnimatedPressable>
   );
 }
@@ -106,29 +134,5 @@ const styles = StyleSheet.create({
   },
   row: {
     gap: spacing.md,
-  },
-  card: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 100,
-    gap: spacing.sm,
-  },
-  groupName: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 15,
-    color: colors.textPrimary,
-    marginTop: spacing.xs,
-  },
-  exerciseCount: {
-    fontFamily: 'SpaceMono_400Regular',
-    fontSize: 11,
-    color: colors.textTertiary,
   },
 });

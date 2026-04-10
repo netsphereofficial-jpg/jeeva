@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, LayoutChangeEvent, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -6,7 +6,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { radius, spacing } from '@/theme/spacing';
 
 interface SegmentedControlProps {
@@ -20,6 +20,7 @@ export function SegmentedControl({
   activeIndex,
   onChange,
 }: SegmentedControlProps) {
+  const { colors, isDark } = useAppTheme();
   const translateX = useSharedValue(0);
   const segmentWidth = useSharedValue(0);
 
@@ -51,9 +52,37 @@ export function SegmentedControl({
     onChange(index);
   };
 
+  const contrastColor = isDark ? colors.background : '#FFFFFF';
+
+  const dynamicStyles = useMemo(
+    () => ({
+      container: {
+        backgroundColor: colors.surface,
+        borderColor: colors.border,
+      },
+      indicator: {
+        backgroundColor: colors.surfaceGlass,
+        borderColor: colors.surfaceGlassBorder,
+        borderWidth: 1,
+      },
+      activeLabel: {
+        color: colors.textPrimary,
+      },
+      inactiveLabel: {
+        color: colors.textSecondary,
+      },
+    }),
+    [colors, contrastColor],
+  );
+
   return (
-    <View style={styles.container} onLayout={handleLayout}>
-      <Animated.View style={[styles.indicator, indicatorStyle]} />
+    <View
+      style={[styles.container, dynamicStyles.container]}
+      onLayout={handleLayout}
+    >
+      <Animated.View
+        style={[styles.indicator, dynamicStyles.indicator, indicatorStyle]}
+      />
       {segments.map((segment, index) => (
         <Pressable
           key={segment}
@@ -64,8 +93,8 @@ export function SegmentedControl({
             style={[
               styles.label,
               index === activeIndex
-                ? styles.activeLabel
-                : styles.inactiveLabel,
+                ? dynamicStyles.activeLabel
+                : dynamicStyles.inactiveLabel,
             ]}
           >
             {segment}
@@ -79,10 +108,8 @@ export function SegmentedControl({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
     padding: 2,
     position: 'relative',
   },
@@ -91,7 +118,6 @@ const styles = StyleSheet.create({
     top: 2,
     left: 2,
     bottom: 2,
-    backgroundColor: colors.primary,
     borderRadius: radius.md - 2,
   },
   segment: {
@@ -104,11 +130,5 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'DMSans_600SemiBold',
     fontSize: 13,
-  },
-  activeLabel: {
-    color: '#0A0A0F',
-  },
-  inactiveLabel: {
-    color: colors.textSecondary,
   },
 });

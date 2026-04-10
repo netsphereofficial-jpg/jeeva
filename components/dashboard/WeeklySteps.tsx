@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { BarChart3 } from 'lucide-react-native';
 import { Card } from '@/components/ui/Card';
 import { MonoText } from '@/components/ui/MonoText';
 import { useHealthStore } from '@/stores/healthStore';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { opacity } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
 
 interface WeeklyStepsProps {
@@ -35,6 +36,7 @@ function getWeekDates(): string[] {
 }
 
 export function WeeklySteps({ animationIndex = 0 }: WeeklyStepsProps) {
+  const { colors } = useAppTheme();
   const stepsData = useHealthStore((s) => s.data.steps);
 
   const today = new Date();
@@ -51,12 +53,42 @@ export function WeeklySteps({ animationIndex = 0 }: WeeklyStepsProps) {
   // Determine today's index in the week (0=Mon)
   const todayIndex = weekDates.indexOf(todayStr);
 
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    headerLabel: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 15,
+      color: colors.textPrimary,
+    },
+    barCurrent: {
+      width: 20,
+      borderRadius: 6,
+      backgroundColor: colors.primary,
+      shadowColor: colors.primary,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.4,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    barPast: {
+      width: 20,
+      borderRadius: 6,
+      backgroundColor: `rgba(255, 107, 53, ${opacity['15']})`,
+    },
+    barFuture: {
+      width: 20,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
+    },
+  }), [colors]);
+
   return (
     <Card variant="default" animationIndex={animationIndex} style={styles.card}>
       {/* Header */}
       <View style={styles.header}>
         <BarChart3 size={18} color={colors.primary} strokeWidth={2} />
-        <Text style={styles.headerLabel}>Weekly Steps</Text>
+        <Text style={dynamicStyles.headerLabel}>Weekly Steps</Text>
       </View>
 
       {/* Bars */}
@@ -76,21 +108,21 @@ export function WeeklySteps({ animationIndex = 0 }: WeeklyStepsProps) {
                 {isFuture ? (
                   <View
                     style={[
-                      styles.barFuture,
+                      dynamicStyles.barFuture,
                       { height: 4 },
                     ]}
                   />
                 ) : isCurrent ? (
                   <View
                     style={[
-                      styles.barCurrent,
+                      dynamicStyles.barCurrent,
                       { height: barHeight },
                     ]}
                   />
                 ) : (
                   <View
                     style={[
-                      styles.barPast,
+                      dynamicStyles.barPast,
                       { height: barHeight },
                     ]}
                   />
@@ -126,11 +158,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.xl,
   },
-  headerLabel: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 15,
-    color: colors.textPrimary,
-  },
   barsContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -147,27 +174,5 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
     width: '100%',
-  },
-  barCurrent: {
-    width: 20,
-    borderRadius: 6,
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  barPast: {
-    width: 20,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,107,53,0.15)',
-  },
-  barFuture: {
-    width: 20,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    borderStyle: 'dashed',
   },
 });

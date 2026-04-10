@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,20 +14,11 @@ import { WaterTracker } from '@/components/dashboard/WaterTracker';
 import { SleepCard } from '@/components/dashboard/SleepCard';
 import { WeeklySteps } from '@/components/dashboard/WeeklySteps';
 import { GoalProgress } from '@/components/dashboard/GoalProgress';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { textPresets } from '@/theme/typography';
 import { spacing } from '@/theme/spacing';
 import { getTimeOfDayGreeting } from '@/utils/formatters';
-
-function getGreetingIcon() {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) {
-    return <Sun size={24} color={colors.primary} strokeWidth={2} />;
-  }
-  if (hour >= 12 && hour < 17) {
-    return <Sunset size={24} color={colors.primary} strokeWidth={2} />;
-  }
-  return <Moon size={24} color={colors.sleep} strokeWidth={2} />;
-}
+import { useCallback, useState } from 'react';
 
 function getFormattedDate(): string {
   const now = new Date();
@@ -40,6 +31,7 @@ function getFormattedDate(): string {
 }
 
 export default function DashboardScreen() {
+  const { colors } = useAppTheme();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(() => {
@@ -53,8 +45,36 @@ export default function DashboardScreen() {
   const greeting = getTimeOfDayGreeting();
   const dateStr = getFormattedDate();
 
+  const getGreetingIcon = useCallback(() => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      return <Sun size={24} color={colors.primary} strokeWidth={2} />;
+    }
+    if (hour >= 12 && hour < 17) {
+      return <Sunset size={24} color={colors.primary} strokeWidth={2} />;
+    }
+    return <Moon size={24} color={colors.sleep} strokeWidth={2} />;
+  }, [colors]);
+
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    greetingText: {
+      ...textPresets.h2,
+      color: colors.textPrimary,
+    },
+    dateText: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 14,
+      color: colors.textSecondary,
+      marginLeft: 36,
+    },
+  }), [colors]);
+
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={dynamicStyles.safeArea} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -75,9 +95,9 @@ export default function DashboardScreen() {
         >
           <View style={styles.greetingRow}>
             {getGreetingIcon()}
-            <Text style={styles.greetingText}>{greeting}</Text>
+            <Text style={dynamicStyles.greetingText}>{greeting}</Text>
           </View>
-          <Text style={styles.dateText}>{dateStr}</Text>
+          <Text style={dynamicStyles.dateText}>{dateStr}</Text>
         </Animated.View>
 
         {/* QuickStats */}
@@ -112,10 +132,6 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   scrollView: {
     flex: 1,
   },
@@ -131,17 +147,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     marginBottom: spacing.xs,
-  },
-  greetingText: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 24,
-    color: colors.textPrimary,
-  },
-  dateText: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginLeft: 36,
   },
   spacer: {
     height: spacing.lg,

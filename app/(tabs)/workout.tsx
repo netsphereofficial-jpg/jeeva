@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, FlatList, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -9,7 +9,7 @@ import { MonoText } from '@/components/ui/MonoText';
 import { Tag } from '@/components/ui/Tag';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useWorkoutStore } from '@/stores/workoutStore';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { spacing } from '@/theme/spacing';
 import type { CompletedWorkout } from '@/types';
 
@@ -30,12 +30,37 @@ function formatDuration(seconds: number): string {
 }
 
 export default function WorkoutTabScreen() {
+  const { colors } = useAppTheme();
   const router = useRouter();
   const history = useWorkoutStore((s) => s.history);
 
   const handleStartWorkout = () => {
     router.push('/workout/new');
   };
+
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    title: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 28,
+      color: colors.textPrimary,
+    },
+    historyName: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 16,
+      color: colors.textPrimary,
+      flex: 1,
+      marginRight: spacing.md,
+    },
+    historyDate: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 13,
+      color: colors.textTertiary,
+    },
+  }), [colors]);
 
   const renderHistoryItem = ({
     item,
@@ -46,10 +71,10 @@ export default function WorkoutTabScreen() {
   }) => (
     <Card variant="default" animationIndex={index} style={styles.historyCard}>
       <View style={styles.historyHeader}>
-        <Text style={styles.historyName} numberOfLines={1}>
+        <Text style={dynamicStyles.historyName} numberOfLines={1}>
           {item.name}
         </Text>
-        <Text style={styles.historyDate}>{formatDate(item.startTime)}</Text>
+        <Text style={dynamicStyles.historyDate}>{formatDate(item.startTime)}</Text>
       </View>
       <View style={styles.historyMeta}>
         <View style={styles.historyStatRow}>
@@ -69,9 +94,9 @@ export default function WorkoutTabScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={dynamicStyles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Workout</Text>
+        <Text style={dynamicStyles.title}>Workout</Text>
       </View>
 
       <View style={styles.ctaContainer}>
@@ -79,7 +104,7 @@ export default function WorkoutTabScreen() {
           variant="primary"
           label="Start Workout"
           onPress={handleStartWorkout}
-          icon={<Dumbbell size={20} color="#0A0A0F" strokeWidth={2} />}
+          icon={<Dumbbell size={20} color={colors.background} strokeWidth={2} />}
         />
       </View>
 
@@ -103,18 +128,9 @@ export default function WorkoutTabScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   header: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-  },
-  title: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 28,
-    color: colors.textPrimary,
   },
   ctaContainer: {
     paddingHorizontal: spacing.lg,
@@ -132,18 +148,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.sm,
-  },
-  historyName: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 16,
-    color: colors.textPrimary,
-    flex: 1,
-    marginRight: spacing.md,
-  },
-  historyDate: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 13,
-    color: colors.textTertiary,
   },
   historyMeta: {
     flexDirection: 'row',

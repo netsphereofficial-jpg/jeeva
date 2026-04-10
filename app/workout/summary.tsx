@@ -24,7 +24,8 @@ import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { opacity } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 import type { TemplateExercise } from '@/types';
 
@@ -38,6 +39,7 @@ function formatDuration(seconds: number): string {
 }
 
 export default function WorkoutSummaryScreen() {
+  const { colors } = useAppTheme();
   const router = useRouter();
   const history = useWorkoutStore((s) => s.history);
   const personalRecords = useWorkoutStore((s) => s.personalRecords);
@@ -121,11 +123,101 @@ export default function WorkoutSummaryScreen() {
     );
   };
 
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    title: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 24,
+      color: colors.textPrimary,
+    },
+    statLabel: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 13,
+      color: colors.textTertiary,
+    },
+    sectionTitle: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 18,
+      color: colors.textPrimary,
+      marginBottom: spacing.md,
+    },
+    breakdownRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    breakdownName: {
+      fontFamily: 'DMSans_500Medium',
+      fontSize: 15,
+      color: colors.textPrimary,
+      flex: 1,
+      marginRight: spacing.md,
+    },
+    emptyText: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 16,
+      color: colors.textSecondary,
+    },
+    sheetTitle: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 20,
+      color: colors.textPrimary,
+      marginBottom: spacing.lg,
+    },
+    nameInput: {
+      fontFamily: 'DMSans_500Medium',
+      fontSize: 16,
+      color: colors.textPrimary,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      minHeight: 48,
+      marginBottom: spacing.lg,
+    },
+    dayPickerLabel: {
+      fontFamily: 'DMSans_500Medium',
+      fontSize: 14,
+      color: colors.textSecondary,
+      marginBottom: spacing.sm,
+    },
+    dayButton: {
+      flex: 1,
+      height: 44,
+      borderRadius: radius.sm,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    dayButtonActive: {
+      backgroundColor: `rgba(255, 107, 53, ${opacity['15']})`,
+      borderColor: colors.primary,
+    },
+    dayButtonText: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 12,
+      color: colors.textTertiary,
+    },
+    dayButtonTextActive: {
+      color: colors.primary,
+    },
+  }), [colors]);
+
   if (!lastWorkout) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={dynamicStyles.container}>
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No workout data</Text>
+          <Text style={dynamicStyles.emptyText}>No workout data</Text>
           <Button
             variant="primary"
             label="Go Home"
@@ -164,14 +256,14 @@ export default function WorkoutSummaryScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={dynamicStyles.container} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerSection}>
           <CheckCircle size={48} color={colors.health} strokeWidth={1.5} />
-          <Text style={styles.title}>Workout Complete</Text>
+          <Text style={dynamicStyles.title}>Workout Complete</Text>
         </View>
 
         <View style={styles.statsGrid}>
@@ -183,19 +275,19 @@ export default function WorkoutSummaryScreen() {
                 <MonoText size={24} color={colors.textPrimary} weight="bold">
                   {stat.value}
                 </MonoText>
-                <Text style={styles.statLabel}>{stat.label}</Text>
+                <Text style={dynamicStyles.statLabel}>{stat.label}</Text>
               </Card>
             );
           })}
         </View>
 
         <View style={styles.breakdownSection}>
-          <Text style={styles.sectionTitle}>Exercise Breakdown</Text>
+          <Text style={dynamicStyles.sectionTitle}>Exercise Breakdown</Text>
           {lastWorkout.exercises.map((ex) => {
             const completedSets = ex.sets.filter((s) => s.completed).length;
             return (
-              <View key={ex.id} style={styles.breakdownRow}>
-                <Text style={styles.breakdownName} numberOfLines={1}>
+              <View key={ex.id} style={dynamicStyles.breakdownRow}>
+                <Text style={dynamicStyles.breakdownName} numberOfLines={1}>
                   {ex.exercise?.name ?? ex.exerciseId}
                 </Text>
                 <MonoText size={14} color={colors.textSecondary}>
@@ -221,29 +313,29 @@ export default function WorkoutSummaryScreen() {
         onClose={() => setShowTemplateSheet(false)}
         snapPoints={['45%']}
       >
-        <Text style={styles.sheetTitle}>Save as Template</Text>
+        <Text style={dynamicStyles.sheetTitle}>Save as Template</Text>
         <TextInput
-          style={styles.nameInput}
+          style={dynamicStyles.nameInput}
           value={templateName}
           onChangeText={setTemplateName}
           placeholder="Template name"
           placeholderTextColor={colors.textTertiary}
         />
-        <Text style={styles.dayPickerLabel}>Schedule (optional)</Text>
+        <Text style={dynamicStyles.dayPickerLabel}>Schedule (optional)</Text>
         <View style={styles.dayPicker}>
           {DAY_LABELS.map((label, idx) => (
             <Pressable
               key={label}
               onPress={() => toggleDay(idx)}
               style={[
-                styles.dayButton,
-                selectedDays.includes(idx) && styles.dayButtonActive,
+                dynamicStyles.dayButton,
+                selectedDays.includes(idx) && dynamicStyles.dayButtonActive,
               ]}
             >
               <Text
                 style={[
-                  styles.dayButtonText,
-                  selectedDays.includes(idx) && styles.dayButtonTextActive,
+                  dynamicStyles.dayButtonText,
+                  selectedDays.includes(idx) && dynamicStyles.dayButtonTextActive,
                 ]}
               >
                 {label}
@@ -264,10 +356,6 @@ export default function WorkoutSummaryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   scrollContent: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing['4xl'],
@@ -276,11 +364,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing['3xl'],
     gap: spacing.md,
-  },
-  title: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 24,
-    color: colors.textPrimary,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -295,34 +378,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.xl,
   },
-  statLabel: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 13,
-    color: colors.textTertiary,
-  },
   breakdownSection: {
     marginBottom: spacing['2xl'],
-  },
-  sectionTitle: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 18,
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
-  },
-  breakdownRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  breakdownName: {
-    fontFamily: 'DMSans_500Medium',
-    fontSize: 15,
-    color: colors.textPrimary,
-    flex: 1,
-    marginRight: spacing.md,
   },
   actions: {
     gap: spacing.md,
@@ -333,62 +390,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.lg,
   },
-  emptyText: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-  sheetTitle: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 20,
-    color: colors.textPrimary,
-    marginBottom: spacing.lg,
-  },
-  nameInput: {
-    fontFamily: 'DMSans_500Medium',
-    fontSize: 16,
-    color: colors.textPrimary,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    minHeight: 48,
-    marginBottom: spacing.lg,
-  },
-  dayPickerLabel: {
-    fontFamily: 'DMSans_500Medium',
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-  },
   dayPicker: {
     flexDirection: 'row',
     gap: spacing.sm,
     marginBottom: spacing.xl,
-  },
-  dayButton: {
-    flex: 1,
-    height: 44,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  dayButtonActive: {
-    backgroundColor: 'rgba(255, 107, 53, 0.15)',
-    borderColor: colors.primary,
-  },
-  dayButtonText: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 12,
-    color: colors.textTertiary,
-  },
-  dayButtonTextActive: {
-    color: colors.primary,
   },
   saveButton: {
     marginTop: spacing.sm,

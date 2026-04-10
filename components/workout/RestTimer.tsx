@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { CircularProgress } from '@/components/ui/CircularProgress';
 import { MonoText } from '@/components/ui/MonoText';
 import { Button } from '@/components/ui/Button';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { opacity } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 import { useRestTimer } from '@/hooks/useRestTimer';
 
@@ -25,6 +26,51 @@ export function RestTimer({
   nextExerciseName,
   nextSetInfo,
 }: RestTimerProps) {
+  const { colors } = useAppTheme();
+
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: colors.overlay,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 100,
+    },
+    restLabel: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 14,
+      color: colors.textTertiary,
+      marginTop: spacing.xs,
+      letterSpacing: 2,
+    },
+    nextUpLabel: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 13,
+      color: colors.textTertiary,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    nextExercise: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 17,
+      color: colors.textPrimary,
+    },
+    durationPill: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      minWidth: 48,
+      alignItems: 'center',
+    },
+    durationPillActive: {
+      backgroundColor: `rgba(139, 92, 246, ${opacity['15']})`,
+      borderColor: colors.sleep,
+    },
+  }), [colors]);
+
   if (!isVisible) return null;
 
   const { timeRemaining, progress, duration, extend, setDuration } = restTimer;
@@ -48,7 +94,7 @@ export function RestTimer({
   };
 
   return (
-    <View style={styles.overlay}>
+    <View style={dynamicStyles.overlay}>
       <View style={styles.content}>
         <View style={styles.ringContainer}>
           <CircularProgress
@@ -60,15 +106,15 @@ export function RestTimer({
             <MonoText size={64} color={colors.textPrimary} weight="bold">
               {timeDisplay}
             </MonoText>
-            <Text style={styles.restLabel}>REST</Text>
+            <Text style={dynamicStyles.restLabel}>REST</Text>
           </CircularProgress>
         </View>
 
         {(nextExerciseName || nextSetInfo) && (
           <View style={styles.nextUp}>
-            <Text style={styles.nextUpLabel}>Next up</Text>
+            <Text style={dynamicStyles.nextUpLabel}>Next up</Text>
             {nextExerciseName && (
-              <Text style={styles.nextExercise}>{nextExerciseName}</Text>
+              <Text style={dynamicStyles.nextExercise}>{nextExerciseName}</Text>
             )}
             {nextSetInfo && (
               <MonoText size={13} color={colors.textTertiary}>
@@ -100,8 +146,8 @@ export function RestTimer({
               key={dur}
               onPress={() => handleDurationSelect(dur)}
               style={[
-                styles.durationPill,
-                duration === dur && styles.durationPillActive,
+                dynamicStyles.durationPill,
+                duration === dur && dynamicStyles.durationPillActive,
               ]}
             >
               <MonoText
@@ -119,13 +165,6 @@ export function RestTimer({
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(10, 10, 15, 0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 100,
-  },
   content: {
     alignItems: 'center',
     paddingHorizontal: spacing['2xl'],
@@ -134,29 +173,10 @@ const styles = StyleSheet.create({
   ringContainer: {
     marginBottom: spacing['3xl'],
   },
-  restLabel: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 14,
-    color: colors.textTertiary,
-    marginTop: spacing.xs,
-    letterSpacing: 2,
-  },
   nextUp: {
     alignItems: 'center',
     marginBottom: spacing['3xl'],
     gap: spacing.xs,
-  },
-  nextUpLabel: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 13,
-    color: colors.textTertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  nextExercise: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 17,
-    color: colors.textPrimary,
   },
   controls: {
     flexDirection: 'row',
@@ -173,19 +193,5 @@ const styles = StyleSheet.create({
   durationSelector: {
     flexDirection: 'row',
     gap: spacing.sm,
-  },
-  durationPill: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    minWidth: 48,
-    alignItems: 'center',
-  },
-  durationPillActive: {
-    backgroundColor: 'rgba(139, 92, 246, 0.15)',
-    borderColor: colors.sleep,
   },
 });

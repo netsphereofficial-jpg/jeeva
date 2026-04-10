@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -21,13 +21,14 @@ import { MetricCard } from '@/components/health/MetricCard';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { MonoText } from '@/components/ui/MonoText';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { spacing } from '@/theme/spacing';
 import { formatNumber } from '@/utils/formatters';
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function HealthScreen() {
+  const { colors } = useAppTheme();
   const {
     data,
     isConnected,
@@ -72,8 +73,46 @@ export default function HealthScreen() {
     ? `${Math.floor(todaySleep.durationMin / 60)}h ${todaySleep.durationMin % 60}m`
     : '--';
 
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 28,
+      color: colors.textPrimary,
+      marginTop: spacing.sm,
+      marginBottom: spacing.xs,
+    },
+    connectTitle: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 18,
+      color: colors.textPrimary,
+      textAlign: 'center',
+    },
+    connectSubtitle: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 14,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 20,
+      maxWidth: 260,
+    },
+    placeholder: {
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
+      padding: spacing.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 130,
+    },
+  }), [colors]);
+
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={dynamicStyles.safeArea} edges={['top']}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
@@ -87,7 +126,7 @@ export default function HealthScreen() {
         }
       >
         {/* Header */}
-        <Text style={styles.header}>Health</Text>
+        <Text style={dynamicStyles.header}>Health</Text>
 
         {/* Connection Banner */}
         <ConnectionBanner
@@ -102,10 +141,10 @@ export default function HealthScreen() {
           <Card variant="tinted" tintColor={colors.health} animationIndex={1}>
             <View style={styles.connectPrompt}>
               <Activity size={32} color={colors.health} strokeWidth={1.5} />
-              <Text style={styles.connectTitle}>
+              <Text style={dynamicStyles.connectTitle}>
                 Connect to {platformName}
               </Text>
-              <Text style={styles.connectSubtitle}>
+              <Text style={dynamicStyles.connectSubtitle}>
                 Sync your steps, heart rate, and sleep data automatically
               </Text>
               <Button
@@ -113,7 +152,7 @@ export default function HealthScreen() {
                 accentColor={colors.health}
                 label={`Connect ${platformName}`}
                 onPress={requestPermissions}
-                icon={<Activity size={16} color="#0A0A0F" strokeWidth={2} />}
+                icon={<Activity size={16} color={colors.background} strokeWidth={2} />}
                 style={styles.connectButtonFull}
               />
             </View>
@@ -161,7 +200,7 @@ export default function HealthScreen() {
             </View>
             <View style={styles.gridItem}>
               {/* Placeholder — keeps grid alignment */}
-              <View style={styles.placeholder}>
+              <View style={dynamicStyles.placeholder}>
                 <MonoText size={11} color={colors.textTertiary}>
                   More metrics soon
                 </MonoText>
@@ -261,10 +300,6 @@ function buildHRTrend(
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   scroll: {
     flex: 1,
   },
@@ -273,31 +308,10 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
     gap: spacing.lg,
   },
-  header: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 28,
-    color: colors.textPrimary,
-    marginTop: spacing.sm,
-    marginBottom: spacing.xs,
-  },
   connectPrompt: {
     alignItems: 'center',
     paddingVertical: spacing.lg,
     gap: spacing.md,
-  },
-  connectTitle: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 18,
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
-  connectSubtitle: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
-    maxWidth: 260,
   },
   connectButtonFull: {
     marginTop: spacing.sm,
@@ -312,15 +326,5 @@ const styles = StyleSheet.create({
   },
   gridItem: {
     flex: 1,
-  },
-  placeholder: {
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-    padding: spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 130,
   },
 });

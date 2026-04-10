@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pressable, StyleSheet, Platform } from 'react-native';
+import React, { useMemo } from 'react';
+import { Pressable, StyleSheet, ViewStyle, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,7 +7,8 @@ import Animated, {
   interpolateColor,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { colorGlow } from '@/theme/shadows';
 
 interface ToggleProps {
   value: boolean;
@@ -21,6 +22,7 @@ const THUMB_SIZE = 24;
 const THUMB_MARGIN = 3;
 
 export function Toggle({ value, onToggle, disabled = false }: ToggleProps) {
+  const { colors } = useAppTheme();
   const progress = useSharedValue(value ? 1 : 0);
 
   React.useEffect(() => {
@@ -56,16 +58,37 @@ export function Toggle({ value, onToggle, disabled = false }: ToggleProps) {
     ],
   }));
 
+  const activeGlow = useMemo((): ViewStyle | undefined => {
+    if (!value) return undefined;
+    return colorGlow(colors.primary, 0.2);
+  }, [value, colors.primary]);
+
+  const dynamicTrack = useMemo(
+    () => ({
+      borderColor: colors.borderLight,
+    }),
+    [colors.borderLight],
+  );
+
+  const dynamicThumb = useMemo(
+    () => ({
+      backgroundColor: colors.textPrimary,
+    }),
+    [colors.textPrimary],
+  );
+
   return (
     <Pressable onPress={handlePress} disabled={disabled}>
       <Animated.View
         style={[
           styles.track,
+          dynamicTrack,
           trackStyle,
+          activeGlow,
           disabled && styles.disabled,
         ]}
       >
-        <Animated.View style={[styles.thumb, thumbStyle]} />
+        <Animated.View style={[styles.thumb, dynamicThumb, thumbStyle]} />
       </Animated.View>
     </Pressable>
   );
@@ -77,7 +100,6 @@ const styles = StyleSheet.create({
     height: TRACK_HEIGHT,
     borderRadius: TRACK_HEIGHT / 2,
     borderWidth: 1,
-    borderColor: colors.borderLight,
     padding: THUMB_MARGIN,
     justifyContent: 'center',
   },
@@ -85,7 +107,6 @@ const styles = StyleSheet.create({
     width: THUMB_SIZE,
     height: THUMB_SIZE,
     borderRadius: THUMB_SIZE / 2,
-    backgroundColor: colors.textPrimary,
   },
   disabled: {
     opacity: 0.5,

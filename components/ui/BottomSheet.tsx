@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Modal, Pressable, View, ScrollView, StyleSheet } from 'react-native';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 interface BottomSheetProps {
   isOpen: boolean;
@@ -14,6 +14,23 @@ export function BottomSheet({
   onClose,
   children,
 }: BottomSheetProps) {
+  const { colors } = useAppTheme();
+
+  const dynamicStyles = useMemo(
+    () => ({
+      backdrop: {
+        backgroundColor: colors.overlay,
+      },
+      sheet: {
+        backgroundColor: colors.surfaceElevated,
+      },
+      handle: {
+        backgroundColor: colors.textTertiary,
+      },
+    }),
+    [colors],
+  );
+
   if (!isOpen) return null;
 
   return (
@@ -24,9 +41,12 @@ export function BottomSheet({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
+        <Pressable
+          style={[styles.backdrop, dynamicStyles.backdrop]}
+          onPress={onClose}
+        />
+        <View style={[styles.sheet, dynamicStyles.sheet]}>
+          <View style={[styles.handle, dynamicStyles.handle]} />
           <ScrollView
             style={styles.content}
             showsVerticalScrollIndicator={false}
@@ -47,10 +67,8 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.overlay,
   },
   sheet: {
-    backgroundColor: colors.surfaceElevated,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
@@ -59,7 +77,6 @@ const styles = StyleSheet.create({
   },
   handle: {
     alignSelf: 'center',
-    backgroundColor: colors.textTertiary,
     width: 36,
     height: 4,
     borderRadius: 2,

@@ -7,7 +7,7 @@ import Animated, {
   useDerivedValue,
 } from 'react-native-reanimated';
 import { MonoText } from './MonoText';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 interface AnimatedNumberProps {
   value: number;
@@ -15,7 +15,7 @@ interface AnimatedNumberProps {
   format?: (n: number) => string;
   size?: number;
   color?: string;
-  weight?: 'regular' | 'bold';
+  weight?: 'regular' | 'medium' | 'bold';
   style?: TextStyle;
 }
 
@@ -34,10 +34,12 @@ export function AnimatedNumber({
   value,
   format,
   size = 16,
-  color = colors.textPrimary,
+  color,
   weight = 'regular',
   style,
 }: AnimatedNumberProps) {
+  const { colors } = useAppTheme();
+  const resolvedColor = color ?? colors.textPrimary;
   const animatedValue = useSharedValue(value);
 
   useEffect(() => {
@@ -65,7 +67,7 @@ export function AnimatedNumber({
   return (
     <AnimatedMonoText
       size={size}
-      color={color}
+      color={resolvedColor}
       weight={weight}
       style={style}
       animatedProps={animatedProps}

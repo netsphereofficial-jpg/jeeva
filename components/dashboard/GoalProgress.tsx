@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Dumbbell, CalendarCheck, Play } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Tag } from '@/components/ui/Tag';
 import { useTemplateStore } from '@/stores/templateStore';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { spacing } from '@/theme/spacing';
 
 interface GoalProgressProps {
@@ -15,6 +15,7 @@ interface GoalProgressProps {
 }
 
 export function GoalProgress({ animationIndex = 0 }: GoalProgressProps) {
+  const { colors } = useAppTheme();
   const getTodaysTemplate = useTemplateStore((s) => s.getTodaysTemplate);
   const template = getTodaysTemplate();
   const router = useRouter();
@@ -26,6 +27,32 @@ export function GoalProgress({ animationIndex = 0 }: GoalProgressProps) {
     router.push('/workout/new');
   };
 
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    headerLabel: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 15,
+      color: colors.textPrimary,
+    },
+    templateName: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 20,
+      color: colors.textPrimary,
+      marginBottom: spacing.xs,
+    },
+    description: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 14,
+      color: colors.textSecondary,
+      marginBottom: spacing.md,
+    },
+    noTemplateText: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 14,
+      color: colors.textSecondary,
+      marginBottom: spacing.lg,
+    },
+  }), [colors]);
+
   if (!template) {
     return (
       <Card
@@ -36,16 +63,16 @@ export function GoalProgress({ animationIndex = 0 }: GoalProgressProps) {
       >
         <View style={styles.header}>
           <Dumbbell size={18} color={colors.primary} strokeWidth={2} />
-          <Text style={styles.headerLabel}>Today's Workout</Text>
+          <Text style={dynamicStyles.headerLabel}>Today's Workout</Text>
         </View>
-        <Text style={styles.noTemplateText}>
+        <Text style={dynamicStyles.noTemplateText}>
           No workout scheduled for today
         </Text>
         <Button
           variant="primary"
           label="Start Workout"
           onPress={handleStartWorkout}
-          icon={<Play size={18} color="#0A0A0F" fill="#0A0A0F" strokeWidth={0} />}
+          icon={<Play size={18} color={colors.background} fill={colors.background} strokeWidth={0} />}
           style={styles.ctaButton}
         />
       </Card>
@@ -68,14 +95,14 @@ export function GoalProgress({ animationIndex = 0 }: GoalProgressProps) {
       {/* Header */}
       <View style={styles.header}>
         <Dumbbell size={18} color={colors.primary} strokeWidth={2} />
-        <Text style={styles.headerLabel}>Today's Workout</Text>
+        <Text style={dynamicStyles.headerLabel}>Today's Workout</Text>
       </View>
 
       {/* Template name */}
-      <Text style={styles.templateName}>{template.name}</Text>
+      <Text style={dynamicStyles.templateName}>{template.name}</Text>
 
       {/* Description */}
-      <Text style={styles.description}>
+      <Text style={dynamicStyles.description}>
         {muscleText} \u00B7 {exerciseCount} exercise{exerciseCount !== 1 ? 's' : ''}
       </Text>
 
@@ -92,7 +119,7 @@ export function GoalProgress({ animationIndex = 0 }: GoalProgressProps) {
         variant="primary"
         label="Start Workout \u2192"
         onPress={handleStartWorkout}
-        icon={<Play size={18} color="#0A0A0F" fill="#0A0A0F" strokeWidth={0} />}
+        icon={<Play size={18} color={colors.background} fill={colors.background} strokeWidth={0} />}
         style={styles.ctaButton}
       />
     </Card>
@@ -109,23 +136,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.lg,
   },
-  headerLabel: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 15,
-    color: colors.textPrimary,
-  },
-  templateName: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 20,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  description: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
-  },
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -134,12 +144,6 @@ const styles = StyleSheet.create({
   },
   calendarBadge: {
     padding: spacing.xs,
-  },
-  noTemplateText: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: spacing.lg,
   },
   ctaButton: {
     marginTop: spacing.xs,

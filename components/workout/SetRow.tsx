@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Pressable, StyleSheet, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Check } from 'lucide-react-native';
 import { MonoText } from '@/components/ui/MonoText';
 import { NumberInput } from '@/components/ui/NumberInput';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { opacity } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 import type { WorkoutSet } from '@/types';
 
@@ -26,6 +27,7 @@ export function SetRow({
   onComplete,
   onUpdate,
 }: SetRowProps) {
+  const { colors } = useAppTheme();
   const isCompleted = set.completed;
   const isUpcoming = !isActive && !isCompleted;
 
@@ -36,14 +38,39 @@ export function SetRow({
     onComplete();
   };
 
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    activeRow: {
+      backgroundColor: colors.surfaceGlass,
+    },
+    upcomingRow: {
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: colors.border,
+      opacity: 0.7,
+    },
+    prRow: {
+      backgroundColor: `rgba(245, 158, 11, ${opacity['8']})`,
+      borderWidth: 1,
+      borderColor: `rgba(245, 158, 11, ${opacity['20']})`,
+    },
+    checkButtonEmpty: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+    },
+    checkButtonCompleted: {
+      backgroundColor: `rgba(16, 185, 129, ${opacity['12']})`,
+    },
+  }), [colors]);
+
   return (
     <View
       style={[
         styles.row,
         isCompleted && styles.completedRow,
-        isActive && !isCompleted && styles.activeRow,
-        isUpcoming && styles.upcomingRow,
-        isPR && styles.prRow,
+        isActive && !isCompleted && dynamicStyles.activeRow,
+        isUpcoming && dynamicStyles.upcomingRow,
+        isPR && dynamicStyles.prRow,
       ]}
     >
       <View style={styles.setNumCol}>
@@ -82,8 +109,8 @@ export function SetRow({
         disabled={isCompleted}
         style={[
           styles.checkButton,
-          isCompleted && styles.checkButtonCompleted,
-          !isCompleted && styles.checkButtonEmpty,
+          isCompleted && dynamicStyles.checkButtonCompleted,
+          !isCompleted && dynamicStyles.checkButtonEmpty,
         ]}
       >
         <Check
@@ -108,20 +135,6 @@ const styles = StyleSheet.create({
   completedRow: {
     opacity: 0.6,
   },
-  activeRow: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
-  },
-  upcomingRow: {
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.border,
-    opacity: 0.7,
-  },
-  prRow: {
-    backgroundColor: 'rgba(245, 158, 11, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.2)',
-  },
   setNumCol: {
     width: 32,
     alignItems: 'center',
@@ -135,13 +148,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  checkButtonEmpty: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-  },
-  checkButtonCompleted: {
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
   },
 });

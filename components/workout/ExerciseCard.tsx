@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Plus, ArrowUp, ArrowDown } from 'lucide-react-native';
@@ -6,7 +6,8 @@ import { Card } from '@/components/ui/Card';
 import { Tag } from '@/components/ui/Tag';
 import { MonoText } from '@/components/ui/MonoText';
 import { SetRow } from './SetRow';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { equipmentColors, difficultyColors, opacity } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 import type { WorkoutExercise, WorkoutSet, ProgressionSuggestion } from '@/types';
 
@@ -23,23 +24,6 @@ interface ExerciseCardProps {
   onAddSet: (exerciseIndex: number) => void;
 }
 
-const equipmentColors: Record<string, string> = {
-  barbell: '#8B5CF6',
-  dumbbell: '#38BDF8',
-  cable: '#F59E0B',
-  machine: '#10B981',
-  bodyweight: '#EF4444',
-  kettlebell: '#FF6B35',
-  band: '#EC4899',
-  other: '#6B7280',
-};
-
-const difficultyColors: Record<string, string> = {
-  beginner: '#10B981',
-  intermediate: '#F59E0B',
-  advanced: '#EF4444',
-};
-
 export function ExerciseCard({
   exercise,
   exerciseIndex,
@@ -48,6 +32,7 @@ export function ExerciseCard({
   onUpdateSet,
   onAddSet,
 }: ExerciseCardProps) {
+  const { colors } = useAppTheme();
   const exerciseData = exercise.exercise;
   const currentSetIndex = exercise.sets.findIndex((s) => !s.completed);
 
@@ -67,10 +52,53 @@ export function ExerciseCard({
     ? suggestion.suggestedWeight - suggestion.currentWeight
     : 0;
 
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    exerciseName: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 17,
+      color: colors.textPrimary,
+      marginBottom: spacing.sm,
+    },
+    progressionIncrease: {
+      backgroundColor: `rgba(16, 185, 129, ${opacity['10']})`,
+    },
+    progressionDecrease: {
+      backgroundColor: `rgba(239, 68, 68, ${opacity['10']})`,
+    },
+    tableHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.sm,
+      paddingBottom: spacing.xs,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      marginBottom: spacing.xs,
+      gap: spacing.sm,
+    },
+    addSetButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+      paddingVertical: spacing.md,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: colors.borderLight,
+      borderRadius: radius.md,
+      minHeight: 48,
+    },
+    addSetText: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+  }), [colors]);
+
   return (
     <Card variant="default" style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.exerciseName}>
+        <Text style={dynamicStyles.exerciseName}>
           {exerciseData?.name ?? exercise.exerciseId}
         </Text>
         <View style={styles.tags}>
@@ -78,11 +106,11 @@ export function ExerciseCard({
             <>
               <Tag
                 label={exerciseData.equipment}
-                color={equipmentColors[exerciseData.equipment] ?? colors.textSecondary}
+                color={equipmentColors[exerciseData.equipment as keyof typeof equipmentColors] ?? colors.textSecondary}
               />
               <Tag
                 label={exerciseData.difficulty}
-                color={difficultyColors[exerciseData.difficulty] ?? colors.textSecondary}
+                color={difficultyColors[exerciseData.difficulty as keyof typeof difficultyColors] ?? colors.textSecondary}
               />
             </>
           )}
@@ -93,7 +121,7 @@ export function ExerciseCard({
         <View
           style={[
             styles.progressionBadge,
-            isIncrease ? styles.progressionIncrease : styles.progressionDecrease,
+            isIncrease ? dynamicStyles.progressionIncrease : dynamicStyles.progressionDecrease,
           ]}
         >
           {isIncrease ? (
@@ -113,7 +141,7 @@ export function ExerciseCard({
         </View>
       )}
 
-      <View style={styles.tableHeader}>
+      <View style={dynamicStyles.tableHeader}>
         <View style={styles.setNumCol}>
           <MonoText size={11} color={colors.textTertiary}>
             SET
@@ -148,9 +176,9 @@ export function ExerciseCard({
         />
       ))}
 
-      <Pressable onPress={handleAddSet} style={styles.addSetButton}>
+      <Pressable onPress={handleAddSet} style={dynamicStyles.addSetButton}>
         <Plus size={18} color={colors.textSecondary} strokeWidth={2} />
-        <Text style={styles.addSetText}>Add Set</Text>
+        <Text style={dynamicStyles.addSetText}>Add Set</Text>
       </Pressable>
     </Card>
   );
@@ -162,12 +190,6 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: spacing.md,
-  },
-  exerciseName: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 17,
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
   },
   tags: {
     flexDirection: 'row',
@@ -183,25 +205,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     marginBottom: spacing.md,
   },
-  progressionIncrease: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-  },
-  progressionDecrease: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-  },
   progressionText: {
     fontFamily: 'DMSans_600SemiBold',
     fontSize: 13,
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.sm,
-    paddingBottom: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    marginBottom: spacing.xs,
-    gap: spacing.sm,
   },
   setNumCol: {
     width: 32,
@@ -213,23 +219,5 @@ const styles = StyleSheet.create({
   checkCol: {
     width: 44,
     alignItems: 'center',
-  },
-  addSetButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-    paddingVertical: spacing.md,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.borderLight,
-    borderRadius: radius.md,
-    minHeight: 48,
-  },
-  addSetText: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 14,
-    color: colors.textSecondary,
   },
 });

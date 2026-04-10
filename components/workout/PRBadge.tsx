@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -9,7 +9,8 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { Trophy } from 'lucide-react-native';
 import { MonoText } from '@/components/ui/MonoText';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { opacity } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 
 interface PRBadgeProps {
@@ -20,6 +21,7 @@ interface PRBadgeProps {
 }
 
 export function PRBadge({ weight, reps, volume, previousVolume }: PRBadgeProps) {
+  const { colors } = useAppTheme();
   const scale = useSharedValue(0);
 
   useEffect(() => {
@@ -38,17 +40,38 @@ export function PRBadge({ weight, reps, volume, previousVolume }: PRBadgeProps) 
 
   const formattedVolume = volume.toLocaleString();
 
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    container: {
+      backgroundColor: `rgba(245, 158, 11, ${opacity['8']})`,
+      borderWidth: 1,
+      borderColor: `rgba(245, 158, 11, ${opacity['20']})`,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      gap: spacing.sm,
+    },
+    title: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 16,
+      color: colors.pr,
+    },
+    previousText: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 13,
+      color: colors.textTertiary,
+    },
+  }), [colors]);
+
   return (
-    <Animated.View style={[styles.container, animatedStyle]}>
+    <Animated.View style={[dynamicStyles.container, animatedStyle]}>
       <View style={styles.row}>
         <Trophy size={22} color={colors.pr} strokeWidth={2} />
-        <Text style={styles.title}>New PR!</Text>
+        <Text style={dynamicStyles.title}>New PR!</Text>
       </View>
       <MonoText size={14} color={colors.textPrimary}>
         {weight}kg x {reps} = {formattedVolume} vol
       </MonoText>
       {previousVolume > 0 && (
-        <Text style={styles.previousText}>
+        <Text style={dynamicStyles.previousText}>
           Previous best: {previousVolume.toLocaleString()} vol
         </Text>
       )}
@@ -57,27 +80,9 @@ export function PRBadge({ weight, reps, volume, previousVolume }: PRBadgeProps) 
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: 'rgba(245, 158, 11, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.2)',
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  title: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 16,
-    color: colors.pr,
-  },
-  previousText: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 13,
-    color: colors.textTertiary,
   },
 });

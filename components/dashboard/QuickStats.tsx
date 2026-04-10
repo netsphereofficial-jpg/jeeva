@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Footprints, Flame, HeartPulse } from 'lucide-react-native';
@@ -6,7 +6,7 @@ import { CircularProgress } from '@/components/ui/CircularProgress';
 import { MonoText } from '@/components/ui/MonoText';
 import { useHealthStore } from '@/stores/healthStore';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { spacing } from '@/theme/spacing';
 import { formatNumber } from '@/utils/formatters';
 
@@ -15,6 +15,7 @@ interface QuickStatsProps {
 }
 
 export function QuickStats({ animationIndex = 0 }: QuickStatsProps) {
+  const { colors } = useAppTheme();
   const healthData = useHealthStore((s) => s.data);
   const stepGoal = useSettingsStore((s) => s.settings.dailyStepGoal);
 
@@ -58,6 +59,26 @@ export function QuickStats({ animationIndex = 0 }: QuickStatsProps) {
     },
   ];
 
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    card: {
+      flex: 1,
+      backgroundColor: colors.surfaceGlass,
+      borderWidth: 1,
+      borderColor: colors.surfaceGlassBorder,
+      borderRadius: 16,
+      alignItems: 'center',
+      paddingVertical: spacing.lg,
+      paddingHorizontal: spacing.sm,
+      gap: spacing.sm,
+    },
+    label: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 11,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+  }), [colors]);
+
   return (
     <View style={styles.row}>
       {cards.map((card, index) => {
@@ -66,7 +87,7 @@ export function QuickStats({ animationIndex = 0 }: QuickStatsProps) {
           <Animated.View
             key={card.label}
             entering={FadeInDown.delay((animationIndex + index) * 80).duration(400)}
-            style={styles.card}
+            style={dynamicStyles.card}
           >
             <CircularProgress
               progress={card.progress}
@@ -79,7 +100,7 @@ export function QuickStats({ animationIndex = 0 }: QuickStatsProps) {
             <MonoText size={18} weight="bold" style={styles.value}>
               {card.value}
             </MonoText>
-            <Text style={styles.label}>{card.label}</Text>
+            <Text style={dynamicStyles.label}>{card.label}</Text>
           </Animated.View>
         );
       })}
@@ -93,24 +114,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
   },
-  card: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.sm,
-    gap: spacing.sm,
-  },
   value: {
     marginTop: spacing.xs,
-  },
-  label: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 11,
-    color: colors.textSecondary,
-    textAlign: 'center',
   },
 });

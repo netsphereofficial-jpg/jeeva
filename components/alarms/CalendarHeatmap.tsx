@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { spacing } from '@/theme/spacing';
 
 interface HeatmapEntry {
@@ -16,12 +16,6 @@ interface CalendarHeatmapProps {
 
 const DAY_HEADERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'] as const;
 
-const STATUS_COLORS: Record<HeatmapEntry['status'], string> = {
-  taken: '#10B981',
-  missed: '#EF4444',
-  future: 'rgba(255,255,255,0.04)',
-};
-
 function getTodayStr(): string {
   const d = new Date();
   const yyyy = d.getFullYear();
@@ -31,6 +25,7 @@ function getTodayStr(): string {
 }
 
 export function CalendarHeatmap({ data }: CalendarHeatmapProps) {
+  const { colors, isDark } = useAppTheme();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const todayStr = getTodayStr();
 
@@ -45,13 +40,36 @@ export function CalendarHeatmap({ data }: CalendarHeatmapProps) {
     setSelectedDate((prev) => (prev === entry.date ? null : entry.date));
   };
 
+  const STATUS_COLORS: Record<HeatmapEntry['status'], string> = useMemo(() => ({
+    taken: colors.health,
+    missed: colors.heart,
+    future: colors.surfaceGlass,
+  }), [colors]);
+
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    headerText: {
+      fontFamily: 'DMSans_500Medium',
+      fontSize: 10,
+      color: colors.textTertiary,
+      textTransform: 'uppercase',
+    },
+    todayBorder: {
+      borderWidth: 2,
+      borderColor: colors.textPrimary,
+    },
+    selectedBorder: {
+      borderWidth: 2,
+      borderColor: colors.textPrimary,
+    },
+  }), [colors]);
+
   return (
     <Animated.View entering={FadeIn.duration(400)} style={styles.container}>
       {/* Day headers */}
       <View style={styles.headerRow}>
         {DAY_HEADERS.map((day, i) => (
           <View key={`header-${i}`} style={styles.headerCell}>
-            <Text style={styles.headerText}>{day}</Text>
+            <Text style={dynamicStyles.headerText}>{day}</Text>
           </View>
         ))}
       </View>
@@ -77,8 +95,8 @@ export function CalendarHeatmap({ data }: CalendarHeatmapProps) {
                 style={[
                   styles.cellInner,
                   { backgroundColor: STATUS_COLORS[entry.status] },
-                  isToday && styles.todayBorder,
-                  isSelected && styles.selectedBorder,
+                  isToday && dynamicStyles.todayBorder,
+                  isSelected && dynamicStyles.selectedBorder,
                 ]}
               />
             </Pressable>
@@ -105,12 +123,6 @@ const styles = StyleSheet.create({
     marginRight: CELL_GAP,
     alignItems: 'center',
   },
-  headerText: {
-    fontFamily: 'DMSans_500Medium',
-    fontSize: 10,
-    color: colors.textTertiary,
-    textTransform: 'uppercase',
-  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -125,13 +137,5 @@ const styles = StyleSheet.create({
     width: CELL_SIZE,
     height: CELL_SIZE,
     borderRadius: 8,
-  },
-  todayBorder: {
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  selectedBorder: {
-    borderWidth: 2,
-    borderColor: colors.textPrimary,
   },
 });

@@ -19,7 +19,7 @@ import { MuscleGroupPicker } from '@/components/workout/MuscleGroupPicker';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { getExercisesByGroup, EXERCISES } from '@/data/exercises';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { radius, spacing } from '@/theme/spacing';
 import type {
   MuscleGroupCategory,
@@ -87,6 +87,7 @@ function formatDate(timestamp?: number): string {
 }
 
 export default function NewWorkoutScreen() {
+  const { colors } = useAppTheme();
   const router = useRouter();
   const [activeSegment, setActiveSegment] = useState(0);
   const startWorkout = useWorkoutStore((s) => s.startWorkout);
@@ -125,6 +126,42 @@ export default function NewWorkoutScreen() {
     }
   };
 
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    title: {
+      flex: 1,
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 20,
+      color: colors.textPrimary,
+      textAlign: 'center',
+    },
+    todayText: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 12,
+      color: colors.primary,
+    },
+    templateName: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 17,
+      color: colors.textPrimary,
+    },
+    lastUsed: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 12,
+      color: colors.textTertiary,
+    },
+    emptyText: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 15,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+  }), [colors]);
+
   const renderTemplateItem = ({
     item,
     index,
@@ -147,14 +184,14 @@ export default function NewWorkoutScreen() {
           {isToday && (
             <View style={styles.todayLabel}>
               <Calendar size={12} color={colors.primary} strokeWidth={2} />
-              <Text style={styles.todayText}>Today's Workout</Text>
+              <Text style={dynamicStyles.todayText}>Today's Workout</Text>
             </View>
           )}
-          <Text style={styles.templateName}>{item.name}</Text>
+          <Text style={dynamicStyles.templateName}>{item.name}</Text>
           <View style={styles.templateMeta}>
             <Tag label={`${item.exercises.length} exercises`} color={colors.textSecondary} />
             {item.lastPerformed && (
-              <Text style={styles.lastUsed}>
+              <Text style={dynamicStyles.lastUsed}>
                 Last: {formatDate(item.lastPerformed)}
               </Text>
             )}
@@ -172,12 +209,12 @@ export default function NewWorkoutScreen() {
   }, [templates, todaysTemplate]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={dynamicStyles.container} edges={['top']}>
       <View style={styles.header}>
         <Pressable onPress={handleBack} style={styles.backButton}>
           <ChevronLeft size={24} color={colors.textPrimary} strokeWidth={2} />
         </Pressable>
-        <Text style={styles.title}>New Workout</Text>
+        <Text style={dynamicStyles.title}>New Workout</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -198,7 +235,7 @@ export default function NewWorkoutScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
+              <Text style={dynamicStyles.emptyText}>
                 No templates yet. Create one after completing a workout.
               </Text>
             </View>
@@ -214,10 +251,6 @@ export default function NewWorkoutScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -229,13 +262,6 @@ const styles = StyleSheet.create({
     height: 48,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  title: {
-    flex: 1,
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 20,
-    color: colors.textPrimary,
-    textAlign: 'center',
   },
   headerSpacer: {
     width: 48,
@@ -260,36 +286,14 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginBottom: spacing.xs,
   },
-  todayText: {
-    fontFamily: 'DMSans_600SemiBold',
-    fontSize: 12,
-    color: colors.primary,
-  },
-  templateName: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 17,
-    color: colors.textPrimary,
-  },
   templateMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
-  lastUsed: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 12,
-    color: colors.textTertiary,
-  },
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: spacing['4xl'],
-  },
-  emptyText: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 15,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
   },
   pickerContainer: {
     paddingHorizontal: spacing.lg,
