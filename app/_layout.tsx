@@ -155,6 +155,10 @@ function RootLayoutInner() {
           name="achievements"
           options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
         />
+        <Stack.Screen
+          name="profile"
+          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
       </Stack>
       </ErrorBoundary>
       <StatusBar style={isDark ? 'light' : 'dark'} />

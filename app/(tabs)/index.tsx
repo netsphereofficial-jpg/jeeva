@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Sun, Sunset, Moon, Settings, Dumbbell, Play } from 'lucide-react-native';
+import { Sun, Sunset, Moon, User, Dumbbell, Play } from 'lucide-react-native';
 import { Pressable, Platform } from 'react-native';
 import { colorGlow } from '@/theme/shadows';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -112,12 +112,12 @@ export default function DashboardScreen() {
             <Pressable
               onPress={() => {
                 if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/settings');
+                router.push('/profile');
               }}
               hitSlop={12}
               style={[styles.settingsButton, { backgroundColor: colors.surfaceGlass }]}
             >
-              <Settings size={20} color={colors.textSecondary} strokeWidth={2} />
+              <User size={20} color={colors.textSecondary} strokeWidth={2} />
             </Pressable>
           </View>
           <Text style={dynamicStyles.dateText}>{dateStr}</Text>
