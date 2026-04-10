@@ -8,8 +8,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Sun, Sunset, Moon, Settings } from 'lucide-react-native';
+import { Sun, Sunset, Moon, Settings, Dumbbell } from 'lucide-react-native';
 import { Pressable, Platform } from 'react-native';
+import { shadows, colorGlow } from '@/theme/shadows';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { QuickStats } from '@/components/dashboard/QuickStats';
@@ -140,9 +141,25 @@ export default function DashboardScreen() {
         {/* GoalProgress */}
         <GoalProgress animationIndex={7} />
 
-        {/* Bottom padding to clear tab bar */}
+        {/* Bottom padding to clear tab bar + FAB */}
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {/* Floating Start Workout Button */}
+      <Animated.View
+        entering={FadeInDown.delay(500).duration(400)}
+        style={[styles.fabContainer]}
+      >
+        <Pressable
+          onPress={() => {
+            if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            router.push('/workout/new');
+          }}
+          style={[styles.fab, { backgroundColor: colors.primary, ...colorGlow(colors.primary, 0.4) }]}
+        >
+          <Dumbbell size={24} color={colors.background} strokeWidth={2.5} />
+        </Pressable>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -180,6 +197,18 @@ const styles = StyleSheet.create({
     height: spacing.lg,
   },
   bottomPadding: {
-    height: 100,
+    height: 140,
+  },
+  fabContainer: {
+    position: 'absolute',
+    bottom: 100,
+    alignSelf: 'center',
+  },
+  fab: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

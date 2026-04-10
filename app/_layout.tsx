@@ -4,8 +4,9 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import 'react-native-reanimated';
+import * as Notifications from 'expo-notifications';
 // Import to register notification handler at app startup
 import '@/services/notifications';
 
@@ -44,6 +45,38 @@ export const unstable_settings = {
 
 function RootLayoutInner() {
   const { isDark, colors } = useAppTheme();
+  const routerRef = React.useRef<ReturnType<typeof import('expo-router').useRouter> | null>(null);
+
+  // Listen for notification taps to open alarm ring screen
+  React.useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const title = response.notification.request.content.title ?? '';
+      // If it's an alarm notification (has ⏰ prefix), navigate to alarm ring
+      if (title.includes('⏰') || title.includes('Alarm') || title.includes('Wake')) {
+        const body = response.notification.request.content.body ?? '';
+        // Try to extract time from body
+        import('expo-router').then(({ router }) => {
+          router.push('/alarm-ring');
+        });
+      }
+    });
+
+    // Also listen for notifications received while app is in foreground
+    const fgSub = Notifications.addNotificationReceivedListener((notification) => {
+      const title = notification.request.content.title ?? '';
+      if (title.includes('⏰') || title.includes('Alarm') || title.includes('Wake')) {
+        // Auto-navigate to alarm ring screen when alarm fires in foreground
+        import('expo-router').then(({ router }) => {
+          router.push('/alarm-ring');
+        });
+      }
+    });
+
+    return () => {
+      sub.remove();
+      fgSub.remove();
+    };
+  }, []);
 
   const navigationTheme = isDark
     ? {
@@ -82,6 +115,14 @@ function RootLayoutInner() {
         <Stack.Screen
           name="settings"
           options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
+          name="alarm-ring"
+          options={{
+            presentation: 'fullScreenModal',
+            animation: 'fade',
+            gestureEnabled: false,
+          }}
         />
       </Stack>
       <StatusBar style={isDark ? 'light' : 'dark'} />

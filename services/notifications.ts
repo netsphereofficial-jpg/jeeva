@@ -27,22 +27,66 @@ export async function requestNotificationPermissions(): Promise<boolean> {
 // ─── Alarm Notification ────────────────────────────────────────
 
 /**
- * Schedule alarm notifications for each active day of the week.
- * Returns an array of notification IDs (one per day).
- * Uses CALENDAR trigger with weekday for proper day-of-week support.
+ * Calculate seconds until the next occurrence of a given hour:minute
+ * on any of the specified weekdays.
+ */
+function getSecondsUntilNextOccurrence(
+  hour: number,
+  minute: number,
+  daysOfWeek: number[], // 0=Sunday, 6=Saturday
+): number {
+  const now = new Date();
+  const currentDay = now.getDay(); // 0=Sunday
+
+  // Try each day, starting from today, up to 7 days ahead
+  for (let offset = 0; offset < 7; offset++) {
+    const candidateDay = (currentDay + offset) % 7;
+    if (!daysOfWeek.includes(candidateDay)) continue;
+
+    const target = new Date();
+    target.setDate(now.getDate() + offset);
+    target.setHours(hour, minute, 0, 0);
+
+    const diff = Math.floor((target.getTime() - now.getTime()) / 1000);
+    if (diff > 5) {
+      // At least 5 seconds in the future
+      return diff;
+    }
+  }
+
+  // Fallback: schedule for next week on the first matching day
+  for (let offset = 1; offset <= 7; offset++) {
+    const candidateDay = (currentDay + offset) % 7;
+    if (!daysOfWeek.includes(candidateDay)) continue;
+
+    const target = new Date();
+    target.setDate(now.getDate() + offset);
+    target.setHours(hour, minute, 0, 0);
+
+    return Math.max(1, Math.floor((target.getTime() - now.getTime()) / 1000));
+  }
+
+  // Should never reach here, but schedule for 24hrs as failsafe
+  return 86400;
+}
+
+/**
+ * Schedule alarm notification using TIME_INTERVAL trigger.
+ * This works reliably in both Expo Go and development builds.
+ *
+ * Since TIME_INTERVAL can't repeat on specific weekdays, we schedule
+ * for the NEXT matching occurrence. The app should reschedule after each fire.
  */
 export async function scheduleAlarmNotifications(
   alarm: Alarm,
 ): Promise<string[]> {
-  const notificationIds: string[] = [];
-
   // Cancel any existing notifications for this alarm first
   if (alarm.notificationIds) {
     for (const id of alarm.notificationIds) {
       try {
         await Notifications.cancelScheduledNotificationAsync(id);
       } catch {
-        // Ignore — notification may already be cancelled
+        // Ignore
       }
     }
   }
@@ -52,40 +96,46 @@ export async function scheduleAlarmNotifications(
   }
 
   const timeStr = formatTime12h(alarm.hour, alarm.minute);
+  const seconds = getSecondsUntilNextOccurrence(
+    alarm.hour,
+    alarm.minute,
+    alarm.daysOfWeek,
+  );
 
-  for (const dayOfWeek of alarm.daysOfWeek) {
-    try {
-      // expo-notifications weekday: 1 = Sunday, 7 = Saturday
-      // Our daysOfWeek: 0 = Sunday, 6 = Saturday
-      // So we add 1 to convert
-      const id = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: alarm.label || getAlarmTypeLabel(alarm.type),
-          body: `${timeStr} — ${alarm.label || getAlarmTypeLabel(alarm.type)}`,
-          sound: true,
-          ...(Platform.OS === 'ios' && { interruptionLevel: 'timeSensitive' }),
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-          hour: alarm.hour,
-          minute: alarm.minute,
-          weekday: dayOfWeek + 1, // Convert 0-6 to 1-7
-          repeats: true,
-        },
-      });
-      notificationIds.push(id);
-    } catch {
-      // Scheduling may fail in Expo Go — log but don't crash
-      console.warn(`Failed to schedule alarm for day ${dayOfWeek}`);
-    }
+  console.log(
+    `[JEEVA Alarm] Scheduling "${alarm.label || alarm.type}" for ${timeStr} — fires in ${seconds}s (${Math.round(seconds / 60)} min)`,
+  );
+
+  try {
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: `⏰ ${alarm.label || getAlarmTypeLabel(alarm.type)}`,
+        body: `It's ${timeStr}!`,
+        sound: true,
+        priority: Notifications.AndroidNotificationPriority.MAX,
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds,
+        repeats: false, // We'll reschedule on next app open
+      },
+    });
+
+    console.log(`[JEEVA Alarm] Scheduled notification ID: ${id}`);
+
+    // Also list all scheduled notifications for debugging
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    console.log(`[JEEVA Alarm] Total scheduled notifications: ${scheduled.length}`);
+
+    return [id];
+  } catch (err) {
+    console.error('[JEEVA Alarm] Failed to schedule:', err);
+    return [];
   }
-
-  return notificationIds;
 }
 
 /**
- * Schedule a one-time alarm for today or tomorrow at the exact time.
- * Used when no days are selected (one-time alarm).
+ * Schedule a one-time alarm (no days selected).
  */
 export async function scheduleOneTimeAlarm(alarm: Alarm): Promise<string[]> {
   const now = new Date();
@@ -97,25 +147,31 @@ export async function scheduleOneTimeAlarm(alarm: Alarm): Promise<string[]> {
     targetDate.setDate(targetDate.getDate() + 1);
   }
 
-  const secondsUntil = Math.max(1, Math.floor((targetDate.getTime() - now.getTime()) / 1000));
+  const seconds = Math.max(1, Math.floor((targetDate.getTime() - now.getTime()) / 1000));
   const timeStr = formatTime12h(alarm.hour, alarm.minute);
+
+  console.log(
+    `[JEEVA Alarm] One-time alarm "${alarm.label}" for ${timeStr} — fires in ${seconds}s`,
+  );
 
   try {
     const id = await Notifications.scheduleNotificationAsync({
       content: {
-        title: alarm.label || getAlarmTypeLabel(alarm.type),
-        body: `${timeStr} — ${alarm.label || getAlarmTypeLabel(alarm.type)}`,
+        title: `⏰ ${alarm.label || getAlarmTypeLabel(alarm.type)}`,
+        body: `It's ${timeStr}!`,
         sound: true,
+        priority: Notifications.AndroidNotificationPriority.MAX,
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: secondsUntil,
+        seconds,
         repeats: false,
       },
     });
+    console.log(`[JEEVA Alarm] One-time notification ID: ${id}`);
     return [id];
-  } catch {
-    console.warn('Failed to schedule one-time alarm');
+  } catch (err) {
+    console.error('[JEEVA Alarm] Failed to schedule one-time:', err);
     return [];
   }
 }
@@ -126,13 +182,26 @@ export async function cancelNotification(id: string): Promise<void> {
   try {
     await Notifications.cancelScheduledNotificationAsync(id);
   } catch {
-    // Ignore — may already be cancelled
+    // Ignore
   }
 }
 
 export async function cancelAlarmNotifications(notificationIds: string[]): Promise<void> {
   for (const id of notificationIds) {
     await cancelNotification(id);
+  }
+}
+
+// ─── Debug: List all scheduled notifications ──────────────────
+
+export async function debugListScheduledNotifications(): Promise<void> {
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  console.log(`[JEEVA Debug] === Scheduled Notifications (${scheduled.length}) ===`);
+  for (const n of scheduled) {
+    console.log(`  ID: ${n.identifier}`);
+    console.log(`  Title: ${n.content.title}`);
+    console.log(`  Trigger:`, JSON.stringify(n.trigger));
+    console.log('  ---');
   }
 }
 
@@ -166,16 +235,23 @@ export async function scheduleMedicationReminder(
   const hour = parseInt(hourStr, 10);
   const minute = parseInt(minuteStr, 10);
 
+  // Calculate seconds until next occurrence
+  const now = new Date();
+  const target = new Date();
+  target.setHours(hour, minute, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1);
+  const seconds = Math.max(1, Math.floor((target.getTime() - now.getTime()) / 1000));
+
   const id = await Notifications.scheduleNotificationAsync({
     content: {
-      title: 'Medication Reminder',
+      title: '💊 Medication Reminder',
       body: `Time to take ${medication.name} (${medication.dosage})`,
       sound: true,
     },
     trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour,
-      minute,
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds,
+      repeats: false,
     },
   });
   return id;
