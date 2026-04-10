@@ -156,14 +156,15 @@ export interface Alarm {
   id: string;
   type: AlarmType;
   label: string;
-  hour: number;
-  minute: number;
+  hour: number;       // 0-23 (24hr internally)
+  minute: number;     // 0-59
   enabled: boolean;
   daysOfWeek: number[]; // 0 = Sunday, 6 = Saturday
   sound?: string;
   vibrate: boolean;
   snoozeEnabled: boolean;
   snoozeDurationMin: number;
+  notificationIds?: string[]; // expo-notifications IDs for cancellation
 }
 
 // ── Medication ───────────────────────────────────────────────────

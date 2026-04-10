@@ -31,8 +31,9 @@ function hexToRgba(hex: string, alpha: number): string {
 
 export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps) {
   const { colors, isDark } = useAppTheme();
-  const [hour, setHour] = useState(6);
+  const [hour, setHour] = useState(6); // 24hr internally
   const [minute, setMinute] = useState(30);
+  const [isPM, setIsPM] = useState(false);
   const [label, setLabel] = useState('');
   const [type, setType] = useState<AlarmType>('wakeup');
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>([1, 2, 3, 4, 5]);
@@ -44,10 +45,33 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
     { type: 'medication', icon: Pill, color: colors.alarmMedication, label: 'Medication' },
   ], [colors]);
 
+  // Convert 24hr to 12hr display
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+
+  const handleHourChange = (newDisplayHour: number) => {
+    // Convert 12hr display back to 24hr
+    let h24 = newDisplayHour;
+    if (isPM && newDisplayHour !== 12) h24 = newDisplayHour + 12;
+    if (!isPM && newDisplayHour === 12) h24 = 0;
+    setHour(h24);
+  };
+
+  const handleToggleAMPM = () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    const newIsPM = !isPM;
+    setIsPM(newIsPM);
+    // Adjust hour accordingly
+    if (newIsPM && hour < 12) setHour(hour + 12);
+    if (!newIsPM && hour >= 12) setHour(hour - 12);
+  };
+
   useEffect(() => {
     if (editAlarm) {
       setHour(editAlarm.hour);
       setMinute(editAlarm.minute);
+      setIsPM(editAlarm.hour >= 12);
       setLabel(editAlarm.label);
       setType(editAlarm.type);
       setDaysOfWeek(editAlarm.daysOfWeek);
@@ -55,6 +79,7 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
     } else {
       setHour(6);
       setMinute(30);
+      setIsPM(false);
       setLabel('');
       setType('wakeup');
       setDaysOfWeek([1, 2, 3, 4, 5]);
@@ -172,17 +197,32 @@ export function AlarmForm({ isOpen, onClose, onSave, editAlarm }: AlarmFormProps
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
         <Text style={dynamicStyles.title}>{editAlarm ? 'Edit Alarm' : 'New Alarm'}</Text>
 
-        {/* Time Picker */}
+        {/* Time Picker — 12hr with AM/PM */}
         <View style={styles.section}>
           <Text style={dynamicStyles.sectionLabel}>Time</Text>
           <View style={styles.timeRow}>
             <View style={styles.timeInput}>
-              <NumberInput value={hour} onChange={setHour} min={0} max={23} unit="hr" />
+              <NumberInput value={displayHour} onChange={handleHourChange} min={1} max={12} unit="hr" />
             </View>
             <MonoText size={24} color={colors.textSecondary}>:</MonoText>
             <View style={styles.timeInput}>
-              <NumberInput value={minute} onChange={setMinute} min={0} max={59} step={5} unit="min" />
+              <NumberInput value={minute} onChange={setMinute} min={0} max={59} step={1} unit="min" />
             </View>
+            <Pressable
+              onPress={handleToggleAMPM}
+              style={[
+                styles.ampmToggle,
+                {
+                  backgroundColor: colors.surfaceGlass,
+                  borderColor: colors.primary,
+                  borderWidth: 1,
+                },
+              ]}
+            >
+              <MonoText size={14} weight="bold" color={colors.primary}>
+                {isPM ? 'PM' : 'AM'}
+              </MonoText>
+            </Pressable>
           </View>
         </View>
 
@@ -303,6 +343,15 @@ const styles = StyleSheet.create({
   },
   timeInput: {
     flex: 1,
+  },
+  ampmToggle: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 50,
+    minHeight: 48,
   },
   typeRow: {
     flexDirection: 'row',

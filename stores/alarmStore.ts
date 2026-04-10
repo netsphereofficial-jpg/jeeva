@@ -13,6 +13,7 @@ interface AlarmState {
   updateAlarm: (id: string, updates: Partial<Alarm>) => void;
   toggleAlarm: (id: string) => void;
   deleteAlarm: (id: string) => void;
+  setNotificationIds: (alarmId: string, notificationIds: string[]) => void;
 }
 
 export const useAlarmStore = create<AlarmState>()(
@@ -47,6 +48,14 @@ export const useAlarmStore = create<AlarmState>()(
       deleteAlarm: (id: string) => {
         set((state) => ({
           alarms: state.alarms.filter((a) => a.id !== id),
+        }));
+      },
+
+      setNotificationIds: (alarmId: string, notificationIds: string[]) => {
+        set((state) => ({
+          alarms: state.alarms.map((a) =>
+            a.id === alarmId ? { ...a, notificationIds } : a,
+          ),
         }));
       },
     }),

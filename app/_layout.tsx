@@ -6,6 +6,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+// Import to register notification handler at app startup
+import '@/services/notifications';
 
 import {
   DMSans_400Regular,

@@ -30,7 +30,12 @@ export function AlarmCard({ alarm, onToggle, onDelete, animationIndex = 0 }: Ala
 
   const config = TYPE_CONFIG[alarm.type];
   const IconComponent = config.icon;
-  const timeStr = `${String(alarm.hour).padStart(2, '0')}:${String(alarm.minute).padStart(2, '0')}`;
+
+  // 12-hour format with AM/PM
+  const period = alarm.hour >= 12 ? 'PM' : 'AM';
+  const displayHour = alarm.hour === 0 ? 12 : alarm.hour > 12 ? alarm.hour - 12 : alarm.hour;
+  const timeStr = `${displayHour}:${String(alarm.minute).padStart(2, '0')}`;
+
 
   const handleToggle = () => {
     onToggle(alarm.id);
@@ -102,7 +107,10 @@ export function AlarmCard({ alarm, onToggle, onDelete, animationIndex = 0 }: Ala
             <IconComponent size={16} color={config.color} strokeWidth={2} />
           </View>
           <View>
-            <MonoText size={32} weight="bold">{timeStr}</MonoText>
+            <View style={styles.timeDisplay}>
+              <MonoText size={32} weight="bold">{timeStr}</MonoText>
+              <MonoText size={14} color={colors.textSecondary}>{period}</MonoText>
+            </View>
             {alarm.label ? (
               <Text style={dynamicStyles.label}>{alarm.label}</Text>
             ) : null}
@@ -161,6 +169,11 @@ const styles = StyleSheet.create({
   },
   deleteBtn: {
     padding: spacing.xs,
+  },
+  timeDisplay: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.xs,
   },
   daysRow: {
     flexDirection: 'row',
