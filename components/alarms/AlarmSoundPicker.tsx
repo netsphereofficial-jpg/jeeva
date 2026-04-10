@@ -1,12 +1,18 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import * as DocumentPicker from 'expo-document-picker';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Volume2, Check, Play, Square } from 'lucide-react-native';
+import { Check, Play, Square, Upload, Trash2, Music } from 'lucide-react-native';
 import { MonoText } from '@/components/ui/MonoText';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { spacing, radius } from '@/theme/spacing';
-import { ALARM_SOUNDS, type AlarmSoundOption } from '@/data/alarmSounds';
+import {
+  BUILTIN_SOUNDS,
+  createCustomSound,
+  type AlarmSoundOption,
+} from '@/data/alarmSounds';
+import { useCustomSoundsStore } from '@/stores/customSoundsStore';
 import { previewAlarmSound, stopPreview } from '@/services/alarmSound';
 
 interface AlarmSoundPickerProps {
@@ -18,20 +24,27 @@ export function AlarmSoundPicker({ selectedSoundId, onSelect }: AlarmSoundPicker
   const { colors, isDark } = useAppTheme();
   const [playingId, setPlayingId] = useState<string | null>(null);
 
-  const handlePreview = useCallback(async (soundId: string) => {
+  const customSounds = useCustomSoundsStore((s) => s.sounds);
+  const addCustomSound = useCustomSoundsStore((s) => s.addSound);
+  const removeCustomSound = useCustomSoundsStore((s) => s.removeSound);
+
+  // Combine builtin + custom sounds
+  const allSounds = useMemo(
+    () => [...BUILTIN_SOUNDS, ...customSounds],
+    [customSounds],
+  );
+
+  const handlePreview = useCallback(async (sound: AlarmSoundOption) => {
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
-    if (playingId === soundId) {
-      // Stop previewing
+    if (playingId === sound.id) {
       await stopPreview();
       setPlayingId(null);
     } else {
-      // Start previewing
-      setPlayingId(soundId);
-      await previewAlarmSound(soundId);
-      // Auto-clear playing state after preview ends
+      setPlayingId(sound.id);
+      await previewAlarmSound(sound.id);
       setTimeout(() => setPlayingId(null), 4200);
     }
   }, [playingId]);
@@ -41,19 +54,81 @@ export function AlarmSoundPicker({ selectedSoundId, onSelect }: AlarmSoundPicker
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
     onSelect(soundId);
-    // Preview the selected sound
-    handlePreview(soundId);
-  }, [onSelect, handlePreview]);
+  }, [onSelect]);
+
+  const handleUpload = useCallback(async () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['audio/*'],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets?.[0]) return;
+
+      const asset = result.assets[0];
+      const fileName = asset.name || 'Custom Sound';
+      const displayName = fileName.replace(/\.(mp3|wav|m4a|aac|ogg)$/i, '');
+
+      // Use the cache URI directly (DocumentPicker copies it to cache)
+      const customSound = createCustomSound(displayName, asset.uri);
+      addCustomSound(customSound);
+      onSelect(customSound.id);
+
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (err) {
+      console.warn('[AlarmSoundPicker] Upload failed:', err);
+      Alert.alert('Upload Failed', 'Could not import the audio file. Please try a different file.');
+    }
+  }, [addCustomSound, onSelect]);
+
+  const handleDeleteCustom = useCallback((id: string) => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    Alert.alert(
+      'Remove Custom Sound',
+      'Are you sure you want to remove this sound?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            // If this was selected, switch back to default
+            if (selectedSoundId === id) {
+              onSelect('gentle');
+            }
+            removeCustomSound(id);
+          },
+        },
+      ],
+    );
+  }, [selectedSoundId, onSelect, removeCustomSound]);
 
   const dynamicStyles = useMemo(() => StyleSheet.create({
     container: {
       gap: spacing.sm,
     },
+    sectionLabel: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 11,
+      color: colors.textTertiary,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+      marginTop: spacing.lg,
+      marginBottom: spacing.xs,
+    },
     soundRow: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingVertical: spacing.md,
-      paddingHorizontal: spacing.lg,
+      paddingHorizontal: spacing.md,
       borderRadius: radius.md,
       backgroundColor: colors.surfaceGlass,
       borderWidth: 1,
@@ -65,9 +140,9 @@ export function AlarmSoundPicker({ selectedSoundId, onSelect }: AlarmSoundPicker
       backgroundColor: isDark ? 'rgba(255,107,53,0.08)' : 'rgba(255,107,53,0.06)',
     },
     iconCircle: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 38,
+      height: 38,
+      borderRadius: 19,
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
@@ -77,91 +152,149 @@ export function AlarmSoundPicker({ selectedSoundId, onSelect }: AlarmSoundPicker
     },
     soundName: {
       fontFamily: 'DMSans_600SemiBold',
-      fontSize: 15,
+      fontSize: 14,
       color: colors.textPrimary,
     },
     soundDesc: {
       fontFamily: 'DMSans_400Regular',
-      fontSize: 12,
+      fontSize: 11,
       color: colors.textTertiary,
       marginTop: 1,
     },
-    playButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+    actionBtn: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
     },
-    playButtonActive: {
+    actionBtnActive: {
       backgroundColor: isDark ? 'rgba(255,107,53,0.15)' : 'rgba(255,107,53,0.1)',
     },
     checkIcon: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: colors.primary,
     },
+    uploadRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.lg,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: colors.borderLight,
+      gap: spacing.md,
+      marginTop: spacing.xs,
+    },
+    uploadText: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 14,
+      color: colors.primary,
+    },
+    uploadSubtext: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 11,
+      color: colors.textTertiary,
+    },
   }), [colors, isDark]);
+
+  const renderSoundRow = (sound: AlarmSoundOption, index: number) => {
+    const isSelected = sound.id === selectedSoundId;
+    const isPlaying = sound.id === playingId;
+
+    return (
+      <Animated.View
+        key={sound.id}
+        entering={FadeInDown.delay(index * 30).duration(250)}
+      >
+        <Pressable
+          onPress={() => handleSelect(sound.id)}
+          style={[
+            dynamicStyles.soundRow,
+            isSelected && dynamicStyles.soundRowSelected,
+          ]}
+        >
+          {/* Icon */}
+          <View style={dynamicStyles.iconCircle}>
+            <Text style={{ fontSize: 18 }}>{sound.icon}</Text>
+          </View>
+
+          {/* Text */}
+          <View style={dynamicStyles.textContainer}>
+            <Text style={dynamicStyles.soundName}>{sound.name}</Text>
+            <Text style={dynamicStyles.soundDesc}>{sound.description}</Text>
+          </View>
+
+          {/* Preview button */}
+          <Pressable
+            onPress={() => handlePreview(sound)}
+            hitSlop={8}
+            style={[
+              dynamicStyles.actionBtn,
+              isPlaying && dynamicStyles.actionBtnActive,
+            ]}
+          >
+            {isPlaying ? (
+              <Square size={12} color={colors.primary} fill={colors.primary} strokeWidth={0} />
+            ) : (
+              <Play size={12} color={colors.textSecondary} fill={colors.textSecondary} strokeWidth={0} />
+            )}
+          </Pressable>
+
+          {/* Delete button for custom sounds */}
+          {sound.isCustom && (
+            <Pressable
+              onPress={() => handleDeleteCustom(sound.id)}
+              hitSlop={8}
+              style={dynamicStyles.actionBtn}
+            >
+              <Trash2 size={14} color={colors.heart} strokeWidth={1.5} />
+            </Pressable>
+          )}
+
+          {/* Selected check */}
+          {isSelected && (
+            <View style={dynamicStyles.checkIcon}>
+              <Check size={12} color={isDark ? '#0A0A0F' : '#FFFFFF'} strokeWidth={3} />
+            </View>
+          )}
+        </Pressable>
+      </Animated.View>
+    );
+  };
 
   return (
     <View style={dynamicStyles.container}>
-      {ALARM_SOUNDS.map((sound, index) => {
-        const isSelected = sound.id === selectedSoundId;
-        const isPlaying = sound.id === playingId;
+      {/* Built-in sounds */}
+      {BUILTIN_SOUNDS.map((sound, index) => renderSoundRow(sound, index))}
 
-        return (
-          <Animated.View
-            key={sound.id}
-            entering={FadeInDown.delay(index * 40).duration(300)}
-          >
-            <Pressable
-              onPress={() => handleSelect(sound.id)}
-              style={[
-                dynamicStyles.soundRow,
-                isSelected && dynamicStyles.soundRowSelected,
-              ]}
-            >
-              {/* Icon */}
-              <View style={dynamicStyles.iconCircle}>
-                <Text style={{ fontSize: 20 }}>{sound.icon}</Text>
-              </View>
+      {/* Custom sounds section */}
+      {customSounds.length > 0 && (
+        <>
+          <Text style={dynamicStyles.sectionLabel}>Your Sounds</Text>
+          {customSounds.map((sound, index) =>
+            renderSoundRow(sound, BUILTIN_SOUNDS.length + index),
+          )}
+        </>
+      )}
 
-              {/* Text */}
-              <View style={dynamicStyles.textContainer}>
-                <Text style={dynamicStyles.soundName}>{sound.name}</Text>
-                <Text style={dynamicStyles.soundDesc}>{sound.description}</Text>
-              </View>
-
-              {/* Preview button */}
-              <Pressable
-                onPress={() => handlePreview(sound.id)}
-                hitSlop={8}
-                style={[
-                  dynamicStyles.playButton,
-                  isPlaying && dynamicStyles.playButtonActive,
-                ]}
-              >
-                {isPlaying ? (
-                  <Square size={14} color={colors.primary} fill={colors.primary} strokeWidth={0} />
-                ) : (
-                  <Play size={14} color={colors.textSecondary} fill={colors.textSecondary} strokeWidth={0} />
-                )}
-              </Pressable>
-
-              {/* Selected check */}
-              {isSelected && (
-                <View style={dynamicStyles.checkIcon}>
-                  <Check size={14} color={isDark ? '#0A0A0F' : '#FFFFFF'} strokeWidth={3} />
-                </View>
-              )}
-            </Pressable>
-          </Animated.View>
-        );
-      })}
+      {/* Upload button */}
+      <Pressable onPress={handleUpload} style={dynamicStyles.uploadRow}>
+        <View style={[dynamicStyles.iconCircle, { backgroundColor: isDark ? 'rgba(255,107,53,0.1)' : 'rgba(255,107,53,0.08)' }]}>
+          <Upload size={18} color={colors.primary} strokeWidth={2} />
+        </View>
+        <View style={dynamicStyles.textContainer}>
+          <Text style={dynamicStyles.uploadText}>Upload Custom Sound</Text>
+          <Text style={dynamicStyles.uploadSubtext}>MP3, WAV, M4A, AAC</Text>
+        </View>
+        <Music size={18} color={colors.textTertiary} strokeWidth={1.5} />
+      </Pressable>
     </View>
   );
 }

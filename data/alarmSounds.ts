@@ -4,15 +4,16 @@ export interface AlarmSoundOption {
   id: string;
   name: string;
   description: string;
-  icon: string; // emoji for visual distinction
+  icon: string;
   source: AVPlaybackSource;
+  isCustom?: boolean;        // true if user-uploaded
+  filePath?: string;         // local file path for custom sounds
 }
 
 /**
- * Available alarm sounds.
- * Each sound is bundled as a local asset for offline reliability.
+ * Built-in alarm sounds bundled with the app.
  */
-export const ALARM_SOUNDS: AlarmSoundOption[] = [
+export const BUILTIN_SOUNDS: AlarmSoundOption[] = [
   {
     id: 'gentle',
     name: 'Gentle Rise',
@@ -45,7 +46,7 @@ export const ALARM_SOUNDS: AlarmSoundOption[] = [
     id: 'bell',
     name: 'Temple Bell',
     description: 'Peaceful bell chime',
-    icon: '🔕',
+    icon: '🛎️',
     source: require('../assets/sounds/alarm-bell.mp3'),
   },
   {
@@ -57,14 +58,43 @@ export const ALARM_SOUNDS: AlarmSoundOption[] = [
   },
 ];
 
+/** Backward compat alias */
+export const ALARM_SOUNDS = BUILTIN_SOUNDS;
+
 /**
- * Get a sound by ID. Falls back to 'gentle' if not found.
+ * Get a sound by ID from builtins OR custom sounds.
+ * For custom sounds, create an AVPlaybackSource from the filePath.
  */
-export function getAlarmSoundById(id: string): AlarmSoundOption {
-  return ALARM_SOUNDS.find((s) => s.id === id) ?? ALARM_SOUNDS[0];
+export function getAlarmSoundById(
+  id: string,
+  customSounds?: AlarmSoundOption[],
+): AlarmSoundOption {
+  // Check custom sounds first
+  if (customSounds) {
+    const custom = customSounds.find((s) => s.id === id);
+    if (custom) return custom;
+  }
+  // Then check builtins
+  return BUILTIN_SOUNDS.find((s) => s.id === id) ?? BUILTIN_SOUNDS[0];
 }
 
 /**
- * Default alarm sound ID.
+ * Create an AlarmSoundOption from a user-uploaded file.
  */
+export function createCustomSound(
+  name: string,
+  filePath: string,
+): AlarmSoundOption {
+  const id = `custom_${Date.now().toString(36)}`;
+  return {
+    id,
+    name,
+    description: 'Custom upload',
+    icon: '🎵',
+    source: { uri: filePath },
+    isCustom: true,
+    filePath,
+  };
+}
+
 export const DEFAULT_ALARM_SOUND = 'gentle';

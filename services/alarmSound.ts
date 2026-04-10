@@ -1,6 +1,7 @@
 import { Audio } from 'expo-av';
 import { Vibration, Platform } from 'react-native';
-import { getAlarmSoundById, DEFAULT_ALARM_SOUND } from '@/data/alarmSounds';
+import { getAlarmSoundById, DEFAULT_ALARM_SOUND, type AlarmSoundOption } from '@/data/alarmSounds';
+import { useCustomSoundsStore } from '@/stores/customSoundsStore';
 
 let alarmSound: Audio.Sound | null = null;
 let vibrationInterval: ReturnType<typeof setInterval> | null = null;
@@ -22,8 +23,9 @@ export async function startAlarmSound(soundId?: string): Promise<void> {
       shouldDuckAndroid: false,
     });
 
-    // Load the selected alarm sound
-    const soundOption = getAlarmSoundById(soundId ?? DEFAULT_ALARM_SOUND);
+    // Load the selected alarm sound (check custom sounds store too)
+    const customSounds = useCustomSoundsStore.getState().sounds;
+    const soundOption = getAlarmSoundById(soundId ?? DEFAULT_ALARM_SOUND, customSounds);
     const { sound } = await Audio.Sound.createAsync(
       soundOption.source,
       {
@@ -92,7 +94,8 @@ export async function previewAlarmSound(soundId: string): Promise<void> {
       shouldDuckAndroid: true,
     });
 
-    const soundOption = getAlarmSoundById(soundId);
+    const customSounds = useCustomSoundsStore.getState().sounds;
+    const soundOption = getAlarmSoundById(soundId, customSounds);
     const { sound } = await Audio.Sound.createAsync(
       soundOption.source,
       {
