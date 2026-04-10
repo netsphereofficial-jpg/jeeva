@@ -294,3 +294,20 @@ export interface Program {
   splitType: string;
   days: ProgramDay[];
 }
+
+// ── Body Measurements ──────────────────────────────────────────
+
+export interface BodyMeasurement {
+  id: string;
+  date: string; // YYYY-MM-DD
+  weight?: number; // kg
+  bodyFat?: number; // percentage
+  chest?: number; // cm
+  waist?: number; // cm
+  hips?: number; // cm
+  bicepsLeft?: number; // cm
+  bicepsRight?: number; // cm
+  thighs?: number; // cm
+  calves?: number; // cm
+  notes?: string;
+}

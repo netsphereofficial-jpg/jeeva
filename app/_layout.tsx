@@ -36,6 +36,7 @@ import {
 
 import { AppThemeProvider } from '@/contexts/ThemeContext';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 
 SplashScreen.preventAutoHideAsync();
@@ -115,6 +116,7 @@ function RootLayoutInner() {
 
   return (
     <ThemeProvider value={navigationTheme}>
+      <ErrorBoundary>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
@@ -142,6 +144,7 @@ function RootLayoutInner() {
           }}
         />
       </Stack>
+      </ErrorBoundary>
       <StatusBar style={isDark ? 'light' : 'dark'} />
     </ThemeProvider>
   );
