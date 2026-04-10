@@ -19,7 +19,7 @@ interface AlarmCardProps {
 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'] as const;
 
-export function AlarmCard({ alarm, onToggle, onDelete, animationIndex = 0 }: AlarmCardProps) {
+export const AlarmCard = React.memo(function AlarmCard({ alarm, onToggle, onDelete, animationIndex = 0 }: AlarmCardProps) {
   const { colors, isDark } = useAppTheme();
 
   const TYPE_CONFIG: Record<AlarmType, { icon: typeof Sun; color: string; label: string }> = useMemo(() => ({
@@ -88,7 +88,7 @@ export function AlarmCard({ alarm, onToggle, onDelete, animationIndex = 0 }: Ala
     },
     dayText: {
       fontFamily: 'DMSans_600SemiBold',
-      fontSize: 11,
+      fontSize: 12,
       color: colors.textTertiary,
     },
     dayTextActive: {
@@ -155,7 +155,7 @@ export function AlarmCard({ alarm, onToggle, onDelete, animationIndex = 0 }: Ala
       </View>
     </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   topRow: {

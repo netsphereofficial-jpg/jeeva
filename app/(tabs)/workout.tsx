@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, FlatList, ScrollView, Pressable, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -48,6 +48,15 @@ function formatDuration(seconds: number): string {
   const m = Math.floor((seconds % 3600) / 60);
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
+}
+
+const HISTORY_ITEM_HEIGHT = 90;
+
+function getHistoryItemLayout(
+  _data: ArrayLike<CompletedWorkout> | null | undefined,
+  index: number,
+): { length: number; offset: number; index: number } {
+  return { length: HISTORY_ITEM_HEIGHT, offset: HISTORY_ITEM_HEIGHT * index, index };
 }
 
 const SEGMENTS = ['History', 'Analytics', 'Calendar'];
@@ -103,6 +112,8 @@ export default function WorkoutTabScreen() {
   const growingStyle = useAnimatedStyle(() => ({
     transform: [{ scaleY: growScale.value }],
   }));
+
+  const keyExtractor = useCallback((item: CompletedWorkout) => item.id, []);
 
   const dynamicStyles = useMemo(() => StyleSheet.create({
     container: {
@@ -197,10 +208,14 @@ export default function WorkoutTabScreen() {
       ) : activeSegment === 0 ? (
         <FlatList
           data={history}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractor}
           renderItem={renderHistoryItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          getItemLayout={getHistoryItemLayout}
+          windowSize={5}
+          maxToRenderPerBatch={10}
+          removeClippedSubviews={Platform.OS === 'android'}
           ListEmptyComponent={
             <Animated.View entering={FadeInDown.delay(200).springify()} style={emptyStyles.emptyContainer}>
               <Animated.View style={floatingStyle}>

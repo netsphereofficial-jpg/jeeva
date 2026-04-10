@@ -78,7 +78,12 @@ export function Toggle({ value, onToggle, disabled = false }: ToggleProps) {
   );
 
   return (
-    <Pressable onPress={handlePress} disabled={disabled}>
+    <Pressable
+      onPress={handlePress}
+      disabled={disabled}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value, disabled }}
+    >
       <Animated.View
         style={[
           styles.track,

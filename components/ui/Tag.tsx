@@ -25,7 +25,7 @@ export function Tag({ label, color, size = 'md', icon }: TagProps) {
       },
       label: {
         color,
-        fontSize: size === 'sm' ? 11 : 12,
+        fontSize: 12,
       },
     };
   }, [color, size, isDark]);

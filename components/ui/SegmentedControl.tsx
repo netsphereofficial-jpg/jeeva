@@ -79,6 +79,7 @@ export function SegmentedControl({
     <View
       style={[styles.container, dynamicStyles.container]}
       onLayout={handleLayout}
+      accessibilityRole="tablist"
     >
       <Animated.View
         style={[styles.indicator, dynamicStyles.indicator, indicatorStyle]}
@@ -88,6 +89,9 @@ export function SegmentedControl({
           key={segment}
           style={styles.segment}
           onPress={() => handlePress(index)}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: index === activeIndex }}
+          accessibilityLabel={segment}
         >
           <Text
             style={[

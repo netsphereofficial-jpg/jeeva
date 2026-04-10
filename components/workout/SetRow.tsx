@@ -19,7 +19,7 @@ interface SetRowProps {
   onUpdate: (updates: Partial<WorkoutSet>) => void;
 }
 
-export function SetRow({
+function SetRowInner({
   set,
   setIndex,
   isActive,
@@ -125,6 +125,9 @@ export function SetRow({
           isCompleted && dynamicStyles.checkButtonCompleted,
           !isCompleted && dynamicStyles.checkButtonEmpty,
         ]}
+        accessibilityLabel={isCompleted ? 'Set completed' : `Complete set ${setIndex + 1}`}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: isCompleted }}
       >
         <Check
           size={20}
@@ -135,6 +138,23 @@ export function SetRow({
     </View>
   );
 }
+
+function areSetRowPropsEqual(prev: SetRowProps, next: SetRowProps): boolean {
+  return (
+    prev.set.id === next.set.id &&
+    prev.set.weight === next.set.weight &&
+    prev.set.reps === next.set.reps &&
+    prev.set.completed === next.set.completed &&
+    prev.set.isWarmup === next.set.isWarmup &&
+    prev.setIndex === next.setIndex &&
+    prev.isActive === next.isActive &&
+    prev.isPR === next.isPR &&
+    prev.onComplete === next.onComplete &&
+    prev.onUpdate === next.onUpdate
+  );
+}
+
+export const SetRow = React.memo(SetRowInner, areSetRowPropsEqual);
 
 const styles = StyleSheet.create({
   row: {

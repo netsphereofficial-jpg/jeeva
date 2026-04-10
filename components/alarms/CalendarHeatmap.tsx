@@ -49,7 +49,7 @@ export function CalendarHeatmap({ data }: CalendarHeatmapProps) {
   const dynamicStyles = useMemo(() => StyleSheet.create({
     headerText: {
       fontFamily: 'DMSans_500Medium',
-      fontSize: 10,
+      fontSize: 12,
       color: colors.textTertiary,
       textTransform: 'uppercase',
     },
@@ -90,6 +90,9 @@ export function CalendarHeatmap({ data }: CalendarHeatmapProps) {
               key={entry.date}
               onPress={() => handleCellPress(entry)}
               style={styles.cell}
+              hitSlop={8}
+              accessibilityLabel={`${entry.date}: ${entry.status}`}
+              accessibilityRole="button"
             >
               <View
                 style={[

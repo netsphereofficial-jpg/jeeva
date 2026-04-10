@@ -26,7 +26,7 @@ interface ExerciseCardProps {
   onUpdateNotes?: (exerciseIndex: number, notes: string) => void;
 }
 
-export function ExerciseCard({
+export const ExerciseCard = React.memo(function ExerciseCard({
   exercise,
   exerciseIndex,
   progressionSuggestion,
@@ -237,7 +237,7 @@ export function ExerciseCard({
       )}
     </Card>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

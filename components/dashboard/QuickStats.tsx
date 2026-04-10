@@ -14,7 +14,7 @@ interface QuickStatsProps {
   animationIndex?: number;
 }
 
-export function QuickStats({ animationIndex = 0 }: QuickStatsProps) {
+export const QuickStats = React.memo(function QuickStats({ animationIndex = 0 }: QuickStatsProps) {
   const { colors } = useAppTheme();
   const healthData = useHealthStore((s) => s.data);
   const stepGoal = useSettingsStore((s) => s.settings.dailyStepGoal);
@@ -106,7 +106,7 @@ export function QuickStats({ animationIndex = 0 }: QuickStatsProps) {
       })}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   row: {

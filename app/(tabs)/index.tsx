@@ -19,6 +19,7 @@ import { WaterTracker } from '@/components/dashboard/WaterTracker';
 import { SleepCard } from '@/components/dashboard/SleepCard';
 import { WeeklySteps } from '@/components/dashboard/WeeklySteps';
 import { QuoteCard } from '@/components/dashboard/QuoteCard';
+import { WeeklySummary } from '@/components/dashboard/WeeklySummary';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { GoalProgress } from '@/components/dashboard/GoalProgress';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -127,6 +128,10 @@ export default function DashboardScreen() {
 
         {/* QuickStats */}
         <QuickStats animationIndex={1} />
+
+        {/* Weekly Summary (only shows if workouts this week) */}
+        <View style={styles.spacer} />
+        <WeeklySummary animationIndex={2} />
 
         {/* Spacer */}
         <View style={styles.spacer} />

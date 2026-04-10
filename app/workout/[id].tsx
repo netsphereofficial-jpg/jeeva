@@ -37,6 +37,19 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
 }
 
+const EXERCISE_ITEM_HEIGHT = 56;
+
+function getExerciseItemLayout(
+  _data: ArrayLike<Exercise> | null | undefined,
+  index: number,
+): { length: number; offset: number; index: number } {
+  return { length: EXERCISE_ITEM_HEIGHT, offset: EXERCISE_ITEM_HEIGHT * index, index };
+}
+
+function exerciseKeyExtractor(item: Exercise): string {
+  return item.id;
+}
+
 function formatElapsedTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -330,8 +343,10 @@ export default function ActiveWorkoutScreen() {
 
         <FlatList
           data={filteredExercises}
-          keyExtractor={(item) => item.id}
+          keyExtractor={exerciseKeyExtractor}
           showsVerticalScrollIndicator={false}
+          getItemLayout={getExerciseItemLayout}
+          initialNumToRender={15}
           ListHeaderComponent={
             favoriteExercises.length > 0 ? (
               <View style={styles.favoritesSection}>
