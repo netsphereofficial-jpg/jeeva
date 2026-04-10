@@ -48,6 +48,12 @@ export function SetRow({
       borderColor: colors.border,
       opacity: 0.7,
     },
+    warmupRow: {
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: colors.borderLight,
+      opacity: 0.75,
+    },
     prRow: {
       backgroundColor: `rgba(245, 158, 11, ${opacity['8']})`,
       borderWidth: 1,
@@ -69,16 +75,23 @@ export function SetRow({
         styles.row,
         isCompleted && styles.completedRow,
         isActive && !isCompleted && dynamicStyles.activeRow,
-        isUpcoming && dynamicStyles.upcomingRow,
+        isUpcoming && !set.isWarmup && dynamicStyles.upcomingRow,
+        set.isWarmup && !isCompleted && dynamicStyles.warmupRow,
         isPR && dynamicStyles.prRow,
       ]}
     >
       <View style={styles.setNumCol}>
         <MonoText
           size={14}
-          color={isCompleted ? colors.textTertiary : colors.textSecondary}
+          color={
+            set.isWarmup
+              ? colors.textTertiary
+              : isCompleted
+                ? colors.textTertiary
+                : colors.textSecondary
+          }
         >
-          {setIndex + 1}
+          {set.isWarmup ? 'W' : setIndex + 1}
         </MonoText>
       </View>
 

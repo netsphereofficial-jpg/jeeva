@@ -11,6 +11,7 @@ export default function WorkoutLayout() {
       <Stack.Screen name="new" />
       <Stack.Screen name="[id]" />
       <Stack.Screen name="summary" />
+      <Stack.Screen name="history/[id]" />
     </Stack>
   );
 }

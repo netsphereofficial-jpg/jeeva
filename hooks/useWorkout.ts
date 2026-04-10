@@ -51,6 +51,20 @@ export function useWorkout() {
     [store],
   );
 
+  const addWarmupSet = useCallback(
+    (exerciseIndex: number) => {
+      store.addWarmupSet(exerciseIndex);
+    },
+    [store],
+  );
+
+  const updateExerciseNotes = useCallback(
+    (exerciseIndex: number, notes: string) => {
+      store.updateExerciseNotes(exerciseIndex, notes);
+    },
+    [store],
+  );
+
   const updateSet = useCallback(
     (exerciseIndex: number, setIndex: number, updates: Partial<WorkoutSet>) => {
       store.updateSet(exerciseIndex, setIndex, updates);
@@ -92,8 +106,10 @@ export function useWorkout() {
     startWorkout,
     completeSet,
     addSet,
+    addWarmupSet,
     updateSet,
     addExercise,
+    updateExerciseNotes,
     skipRest,
     finishWorkout,
     pause,

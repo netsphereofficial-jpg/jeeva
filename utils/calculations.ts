@@ -43,7 +43,7 @@ export function calculateTotalVolume(exercises: WorkoutExercise[]): number {
   let total = 0;
   for (const exercise of exercises) {
     for (const set of exercise.sets) {
-      if (set.completed) {
+      if (set.completed && !set.isWarmup) {
         total += calculateVolume(set.weight, set.reps);
       }
     }

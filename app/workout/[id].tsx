@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Clock, Plus, Dumbbell } from 'lucide-react-native';
 import { ExerciseCard } from '@/components/workout/ExerciseCard';
+import { ExerciseFilters } from '@/components/workout/ExerciseFilters';
 import { RestTimer } from '@/components/workout/RestTimer';
 import { Button } from '@/components/ui/Button';
 import { MonoText } from '@/components/ui/MonoText';
@@ -20,9 +21,12 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { useWorkout } from '@/hooks/useWorkout';
 import { EXERCISES } from '@/data/exercises';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { useTemplateStore } from '@/stores/templateStore';
+import { useWorkoutStore } from '@/stores/workoutStore';
+import { getProgressionSuggestions } from '@/utils/calculations';
 import { opacity } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
-import type { Exercise, WorkoutExercise } from '@/types';
+import type { Exercise, WorkoutExercise, ProgressionSuggestionV2 } from '@/types';
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
@@ -47,13 +51,38 @@ export default function ActiveWorkoutScreen() {
     restTimer,
     completeSet,
     addSet,
+    addWarmupSet,
     updateSet,
     addExercise,
+    updateExerciseNotes,
     skipRest,
     finishWorkout,
   } = useWorkout();
 
+  const templates = useTemplateStore((s) => s.templates);
+  const history = useWorkoutStore((s) => s.history);
+
+  const suggestions = useMemo(() => {
+    if (!workout?.templateId) return [];
+    const template = templates.find((t) => t.id === workout.templateId);
+    if (!template) return [];
+    return getProgressionSuggestions(template, history);
+  }, [workout?.templateId, templates, history]);
+
   const [showExerciseSheet, setShowExerciseSheet] = useState(false);
+  const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string[]>([]);
+
+  const filteredExercises = useMemo(() => {
+    let list = EXERCISES;
+    if (selectedEquipment.length > 0) {
+      list = list.filter((e) => selectedEquipment.includes(e.equipment));
+    }
+    if (selectedDifficulty.length > 0) {
+      list = list.filter((e) => selectedDifficulty.includes(e.difficulty));
+    }
+    return list;
+  }, [selectedEquipment, selectedDifficulty]);
 
   const handleFinish = useCallback(() => {
     if (Platform.OS !== 'web') {
@@ -209,9 +238,14 @@ export default function ActiveWorkoutScreen() {
             key={exercise.id}
             exercise={exercise}
             exerciseIndex={idx}
+            progressionSuggestion={suggestions.find(
+              (s) => s.exerciseId === exercise.exerciseId,
+            )}
             onCompleteSet={completeSet}
             onUpdateSet={updateSet}
             onAddSet={addSet}
+            onAddWarmupSet={addWarmupSet}
+            onUpdateNotes={updateExerciseNotes}
           />
         ))}
         <View style={styles.bottomPadding} />
@@ -247,8 +281,14 @@ export default function ActiveWorkoutScreen() {
         snapPoints={['60%', '90%']}
       >
         <Text style={dynamicStyles.sheetTitle}>Add Exercise</Text>
+        <ExerciseFilters
+          selectedEquipment={selectedEquipment}
+          selectedDifficulty={selectedDifficulty}
+          onEquipmentChange={setSelectedEquipment}
+          onDifficultyChange={setSelectedDifficulty}
+        />
         <FlatList
-          data={EXERCISES}
+          data={filteredExercises}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (

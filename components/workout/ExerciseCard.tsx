@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Plus, ArrowUp, ArrowDown } from 'lucide-react-native';
+import { Plus, ArrowUp, ArrowDown, Flame } from 'lucide-react-native';
 import { Card } from '@/components/ui/Card';
 import { Tag } from '@/components/ui/Tag';
 import { MonoText } from '@/components/ui/MonoText';
@@ -9,12 +9,12 @@ import { SetRow } from './SetRow';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { equipmentColors, difficultyColors, opacity } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
-import type { WorkoutExercise, WorkoutSet, ProgressionSuggestion } from '@/types';
+import type { WorkoutExercise, WorkoutSet, ProgressionSuggestionV2 } from '@/types';
 
 interface ExerciseCardProps {
   exercise: WorkoutExercise;
   exerciseIndex: number;
-  progressionSuggestion?: ProgressionSuggestion;
+  progressionSuggestion?: ProgressionSuggestionV2;
   onCompleteSet: (exerciseIndex: number, setIndex: number) => void;
   onUpdateSet: (
     exerciseIndex: number,
@@ -22,6 +22,8 @@ interface ExerciseCardProps {
     updates: Partial<WorkoutSet>,
   ) => void;
   onAddSet: (exerciseIndex: number) => void;
+  onAddWarmupSet?: (exerciseIndex: number) => void;
+  onUpdateNotes?: (exerciseIndex: number, notes: string) => void;
 }
 
 export function ExerciseCard({
@@ -31,6 +33,8 @@ export function ExerciseCard({
   onCompleteSet,
   onUpdateSet,
   onAddSet,
+  onAddWarmupSet,
+  onUpdateNotes,
 }: ExerciseCardProps) {
   const { colors } = useAppTheme();
   const exerciseData = exercise.exercise;
@@ -41,6 +45,13 @@ export function ExerciseCard({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     onAddSet(exerciseIndex);
+  };
+
+  const handleAddWarmupSet = () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    onAddWarmupSet?.(exerciseIndex);
   };
 
   const suggestion = progressionSuggestion;
@@ -92,6 +103,33 @@ export function ExerciseCard({
       fontFamily: 'DMSans_600SemiBold',
       fontSize: 14,
       color: colors.textSecondary,
+    },
+    warmupButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+      paddingVertical: spacing.sm,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: colors.borderLight,
+      borderRadius: radius.md,
+      minHeight: 40,
+    },
+    warmupText: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 13,
+      color: colors.textTertiary,
+    },
+    notesInput: {
+      fontFamily: 'DMSans_400Regular',
+      fontSize: 13,
+      color: colors.textSecondary,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.borderLight,
+      paddingVertical: spacing.sm,
+      marginTop: spacing.md,
     },
   }), [colors]);
 
@@ -176,10 +214,27 @@ export function ExerciseCard({
         />
       ))}
 
+      {onAddWarmupSet && (
+        <Pressable onPress={handleAddWarmupSet} style={dynamicStyles.warmupButton}>
+          <Flame size={16} color={colors.textTertiary} strokeWidth={2} />
+          <Text style={dynamicStyles.warmupText}>Add Warmup</Text>
+        </Pressable>
+      )}
+
       <Pressable onPress={handleAddSet} style={dynamicStyles.addSetButton}>
         <Plus size={18} color={colors.textSecondary} strokeWidth={2} />
         <Text style={dynamicStyles.addSetText}>Add Set</Text>
       </Pressable>
+
+      {onUpdateNotes && (
+        <TextInput
+          style={dynamicStyles.notesInput}
+          placeholder="Add notes..."
+          placeholderTextColor={colors.textTertiary}
+          value={exercise.notes ?? ''}
+          onChangeText={(text) => onUpdateNotes(exerciseIndex, text)}
+        />
+      )}
     </Card>
   );
 }

@@ -28,6 +28,8 @@ interface WorkoutState {
   startWorkout: (name: string, exercises: WorkoutExercise[]) => void;
   addExercise: (exercise: WorkoutExercise) => void;
   addSet: (exerciseIndex: number) => void;
+  addWarmupSet: (exerciseIndex: number) => void;
+  updateExerciseNotes: (exerciseIndex: number, notes: string) => void;
   updateSet: (
     exerciseIndex: number,
     setIndex: number,
@@ -89,6 +91,50 @@ export const useWorkoutStore = create<WorkoutState>()(
           sets.push(newSet);
           exercise.sets = sets;
           exercises[exerciseIndex] = exercise;
+          return {
+            activeWorkout: { ...state.activeWorkout, exercises },
+          };
+        });
+      },
+
+      addWarmupSet: (exerciseIndex: number) => {
+        set((state) => {
+          if (!state.activeWorkout) return state;
+          const exercises = [...state.activeWorkout.exercises];
+          const exercise = { ...exercises[exerciseIndex] };
+          const sets = [...exercise.sets];
+          // Use 50% of first working set's weight
+          const firstWorkingSet = sets.find((s) => !s.isWarmup);
+          const warmupWeight = firstWorkingSet
+            ? Math.round((firstWorkingSet.weight * 0.5) / 2.5) * 2.5
+            : 0;
+          const newSet: WorkoutSet = {
+            id: generateId(),
+            weight: warmupWeight,
+            reps: firstWorkingSet?.reps ?? 10,
+            isWarmup: true,
+            completed: false,
+          };
+          // Insert at the beginning (before working sets)
+          const firstWorkingIdx = sets.findIndex((s) => !s.isWarmup);
+          if (firstWorkingIdx >= 0) {
+            sets.splice(firstWorkingIdx, 0, newSet);
+          } else {
+            sets.unshift(newSet);
+          }
+          exercise.sets = sets;
+          exercises[exerciseIndex] = exercise;
+          return {
+            activeWorkout: { ...state.activeWorkout, exercises },
+          };
+        });
+      },
+
+      updateExerciseNotes: (exerciseIndex: number, notes: string) => {
+        set((state) => {
+          if (!state.activeWorkout) return state;
+          const exercises = [...state.activeWorkout.exercises];
+          exercises[exerciseIndex] = { ...exercises[exerciseIndex], notes };
           return {
             activeWorkout: { ...state.activeWorkout, exercises },
           };
@@ -193,14 +239,15 @@ export const useWorkoutStore = create<WorkoutState>()(
         const endTime = Date.now();
         const totalVolume = calculateTotalVolume(state.activeWorkout.exercises);
         const totalSets = state.activeWorkout.exercises.reduce(
-          (sum, ex) => sum + ex.sets.filter((s) => s.completed).length,
+          (sum, ex) =>
+            sum + ex.sets.filter((s) => s.completed && !s.isWarmup).length,
           0,
         );
         const totalReps = state.activeWorkout.exercises.reduce(
           (sum, ex) =>
             sum +
             ex.sets
-              .filter((s) => s.completed)
+              .filter((s) => s.completed && !s.isWarmup)
               .reduce((r, s) => r + s.reps, 0),
           0,
         );

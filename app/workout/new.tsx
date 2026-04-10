@@ -16,13 +16,17 @@ import { Card } from '@/components/ui/Card';
 import { Tag } from '@/components/ui/Tag';
 import { MonoText } from '@/components/ui/MonoText';
 import { MuscleGroupPicker } from '@/components/workout/MuscleGroupPicker';
+import { ProgramCard } from '@/components/workout/ProgramCard';
+import { ProgramDayPicker } from '@/components/workout/ProgramDayPicker';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { getExercisesByGroup, EXERCISES } from '@/data/exercises';
+import { PROGRAMS } from '@/data/programs';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { radius, spacing } from '@/theme/spacing';
 import type {
   MuscleGroupCategory,
+  Program,
   WorkoutExercise,
   WorkoutTemplate,
   WorkoutSet,
@@ -90,6 +94,7 @@ export default function NewWorkoutScreen() {
   const { colors } = useAppTheme();
   const router = useRouter();
   const [activeSegment, setActiveSegment] = useState(0);
+  const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
   const startWorkout = useWorkoutStore((s) => s.startWorkout);
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const templates = useTemplateStore((s) => s.templates);
@@ -120,6 +125,48 @@ export default function NewWorkoutScreen() {
     const exercises = buildWorkoutExercisesFromGroup(group);
     const label = GROUP_LABELS[group] ?? group;
     startWorkout(`${label} Workout`, exercises);
+    const workout = useWorkoutStore.getState().activeWorkout;
+    if (workout) {
+      router.push(`/workout/${workout.id}`);
+    }
+  };
+
+  const handleSelectProgram = (program: Program) => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    setSelectedProgram(program);
+  };
+
+  const handleStartFromProgram = (program: Program, dayIndex: number) => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    const day = program.days[dayIndex];
+    if (!day) return;
+
+    const exercises: WorkoutExercise[] = day.exerciseIds
+      .map((exerciseId) => {
+        const exercise = EXERCISES.find((e) => e.id === exerciseId);
+        if (!exercise) return null;
+        return {
+          id: generateId(),
+          exerciseId: exercise.id,
+          exercise,
+          sets: Array.from({ length: day.targetSets }, () => ({
+            id: generateId(),
+            weight: 0,
+            reps: day.targetReps,
+            isWarmup: false,
+            completed: false,
+          })),
+          restTimerSec: 90,
+        };
+      })
+      .filter((e): e is WorkoutExercise => e !== null);
+
+    const workoutName = `${program.name} - ${day.name}`;
+    startWorkout(workoutName, exercises);
     const workout = useWorkoutStore.getState().activeWorkout;
     if (workout) {
       router.push(`/workout/${workout.id}`);
@@ -201,12 +248,82 @@ export default function NewWorkoutScreen() {
     );
   };
 
+  const renderProgramItem = ({
+    item,
+    index,
+  }: {
+    item: Program;
+    index: number;
+  }) => (
+    <ProgramCard
+      program={item}
+      onSelect={handleSelectProgram}
+      animationIndex={index}
+    />
+  );
+
   // Sort templates so today's is first
   const sortedTemplates = useMemo(() => {
     if (!todaysTemplate) return templates;
     const rest = templates.filter((t) => t.id !== todaysTemplate.id);
     return [todaysTemplate, ...rest];
   }, [templates, todaysTemplate]);
+
+  const renderProgramsContent = () => {
+    if (selectedProgram) {
+      return (
+        <ProgramDayPicker
+          program={selectedProgram}
+          onSelectDay={(dayIndex) =>
+            handleStartFromProgram(selectedProgram, dayIndex)
+          }
+          onBack={() => setSelectedProgram(null)}
+        />
+      );
+    }
+
+    return (
+      <FlatList
+        data={PROGRAMS}
+        keyExtractor={(item) => item.id}
+        renderItem={renderProgramItem}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      />
+    );
+  };
+
+  const renderContent = () => {
+    switch (activeSegment) {
+      case 0:
+        return renderProgramsContent();
+      case 1:
+        return (
+          <FlatList
+            data={sortedTemplates}
+            keyExtractor={(item) => item.id}
+            renderItem={renderTemplateItem}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={dynamicStyles.emptyText}>
+                  No templates yet. Create one after completing a workout.
+                </Text>
+              </View>
+            }
+          />
+        );
+      case 2:
+        return (
+          <View style={styles.pickerContainer}>
+            <MuscleGroupPicker onSelect={handleSelectGroup} />
+          </View>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <SafeAreaView style={dynamicStyles.container} edges={['top']}>
@@ -220,32 +337,18 @@ export default function NewWorkoutScreen() {
 
       <View style={styles.segmentContainer}>
         <SegmentedControl
-          segments={['Templates', 'Exercises']}
+          segments={['Programs', 'Templates', 'Exercises']}
           activeIndex={activeSegment}
-          onChange={setActiveSegment}
+          onChange={(index) => {
+            setActiveSegment(index);
+            if (index !== 0) {
+              setSelectedProgram(null);
+            }
+          }}
         />
       </View>
 
-      {activeSegment === 0 ? (
-        <FlatList
-          data={sortedTemplates}
-          keyExtractor={(item) => item.id}
-          renderItem={renderTemplateItem}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={dynamicStyles.emptyText}>
-                No templates yet. Create one after completing a workout.
-              </Text>
-            </View>
-          }
-        />
-      ) : (
-        <View style={styles.pickerContainer}>
-          <MuscleGroupPicker onSelect={handleSelectGroup} />
-        </View>
-      )}
+      {renderContent()}
     </SafeAreaView>
   );
 }
