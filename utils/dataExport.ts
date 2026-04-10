@@ -30,11 +30,11 @@ export async function exportAllData(): Promise<void> {
   const jsonString = JSON.stringify(data, null, 2);
 
   try {
-    // Write to a temporary file
-    const dir = new Directory('file:///tmp/');
+    // Write to a temporary file using File.write()
     const fileName = `jeeva-backup-${new Date().toISOString().split('T')[0]}.json`;
     const file = new File(`file:///tmp/${fileName}`);
-    file.text = jsonString;
+    file.create();
+    await file.write(jsonString);
 
     // Share the file
     const canShare = await Sharing.isAvailableAsync();
