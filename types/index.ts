@@ -8,7 +8,7 @@ export interface UserSettings {
   dailyStepGoal: number;
   restTimerDefaultSec: number;
   hapticEnabled: boolean;
-  themeMode?: 'dark' | 'light' | 'system';
+  themeMode?: 'dark' | 'light' | 'system' | 'arctic' | 'midnight';
   userName?: string;
 }
 
@@ -54,6 +54,8 @@ export interface Exercise {
   split?: SplitCategory;
   instructions?: string;
   imageUrl?: string;
+  isCustom?: boolean;
+  notes?: string;
 }
 
 // ── Workout Tracking ─────────────────────────────────────────────

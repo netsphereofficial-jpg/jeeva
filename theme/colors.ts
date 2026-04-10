@@ -58,6 +58,68 @@ export const lightColors = {
   inputBorder: 'rgba(0,0,0,0.1)',
 } as const;
 
+/** Arctic Blue — icy whites, electric blues, frosted glass */
+export const arcticBlueColors: ThemeColors = {
+  background: '#0B1628',
+  surface: '#0F1E35',
+  surfaceElevated: '#162A45',
+  textPrimary: '#E8F0FF',
+  textSecondary: '#8BA4C4',
+  textTertiary: '#546B8A',
+  primary: '#3B82F6',
+  sleep: '#818CF8',
+  health: '#34D399',
+  water: '#22D3EE',
+  heart: '#F87171',
+  pr: '#FBBF24',
+  alarmWakeup: '#3B82F6',
+  alarmWorkout: '#818CF8',
+  alarmMedication: '#34D399',
+  border: 'rgba(138,180,255,0.08)',
+  borderLight: 'rgba(138,180,255,0.12)',
+  overlay: 'rgba(0,0,0,0.7)',
+  amber: '#FBBF24',
+  gold: '#F59E0B',
+  ember: '#60A5FA',
+  surfaceGlass: 'rgba(138,180,255,0.04)',
+  surfaceGlassBorder: 'rgba(138,180,255,0.08)',
+  tabBar: 'rgba(11, 22, 40, 0.95)',
+  tabBarBorder: 'rgba(138,180,255,0.06)',
+  inputBackground: '#0F1E35',
+  inputBorder: 'rgba(138,180,255,0.12)',
+};
+
+/** Midnight Gold — deep navy, gold accents, luxury feel */
+export const midnightGoldColors: ThemeColors = {
+  background: '#0C0A14',
+  surface: '#14112A',
+  surfaceElevated: '#1C1838',
+  textPrimary: '#F0E8D8',
+  textSecondary: '#A89F8A',
+  textTertiary: '#6B6358',
+  primary: '#D4A017',
+  sleep: '#A78BFA',
+  health: '#6EE7B7',
+  water: '#67E8F9',
+  heart: '#FCA5A5',
+  pr: '#FDE68A',
+  alarmWakeup: '#D4A017',
+  alarmWorkout: '#A78BFA',
+  alarmMedication: '#6EE7B7',
+  border: 'rgba(212,160,23,0.06)',
+  borderLight: 'rgba(212,160,23,0.1)',
+  overlay: 'rgba(0,0,0,0.7)',
+  amber: '#F59E0B',
+  gold: '#D4A017',
+  ember: '#E5B94E',
+  surfaceGlass: 'rgba(212,160,23,0.03)',
+  surfaceGlassBorder: 'rgba(212,160,23,0.06)',
+  tabBar: 'rgba(12, 10, 20, 0.95)',
+  tabBarBorder: 'rgba(212,160,23,0.06)',
+  inputBackground: '#14112A',
+  inputBorder: 'rgba(212,160,23,0.1)',
+};
+
 export type ThemeColors = { [K in keyof typeof darkColors]: string };
 
 /** @deprecated Use useAppTheme().colors instead — kept for backward compat during migration */

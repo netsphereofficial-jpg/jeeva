@@ -7,15 +7,19 @@ import {
   FlatList,
   StyleSheet,
   Platform,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Clock, Plus, Dumbbell } from 'lucide-react-native';
+import { Clock, Plus, Dumbbell, Heart, Sparkles, Star } from 'lucide-react-native';
 import { ExerciseCard } from '@/components/workout/ExerciseCard';
 import { ExerciseFilters } from '@/components/workout/ExerciseFilters';
 import { RestTimer } from '@/components/workout/RestTimer';
+import { CustomExerciseForm } from '@/components/workout/CustomExerciseForm';
+import { ExerciseDetailTooltip } from '@/components/workout/ExerciseDetailTooltip';
 import { Button } from '@/components/ui/Button';
+import { Tag } from '@/components/ui/Tag';
 import { MonoText } from '@/components/ui/MonoText';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { useWorkout } from '@/hooks/useWorkout';
@@ -23,6 +27,7 @@ import { EXERCISES } from '@/data/exercises';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
+import { useCustomExerciseStore } from '@/stores/customExerciseStore';
 import { getProgressionSuggestions } from '@/utils/calculations';
 import { opacity } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
@@ -69,20 +74,40 @@ export default function ActiveWorkoutScreen() {
     return getProgressionSuggestions(template, history);
   }, [workout?.templateId, templates, history]);
 
+  const customExercises = useCustomExerciseStore((s) => s.exercises);
+  const favoriteIds = useCustomExerciseStore((s) => s.favoriteIds);
+  const toggleFavorite = useCustomExerciseStore((s) => s.toggleFavorite);
+
   const [showExerciseSheet, setShowExerciseSheet] = useState(false);
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [tooltipExercise, setTooltipExercise] = useState<Exercise | null>(null);
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
   const [selectedDifficulty, setSelectedDifficulty] = useState<string[]>([]);
 
+  const allExercises = useMemo(
+    () => [...customExercises, ...EXERCISES],
+    [customExercises],
+  );
+
+  const favoriteExercises = useMemo(
+    () => allExercises.filter((e) => favoriteIds.includes(e.id)),
+    [allExercises, favoriteIds],
+  );
+
   const filteredExercises = useMemo(() => {
-    let list = EXERCISES;
+    let list = allExercises;
     if (selectedEquipment.length > 0) {
       list = list.filter((e) => selectedEquipment.includes(e.equipment));
     }
     if (selectedDifficulty.length > 0) {
       list = list.filter((e) => selectedDifficulty.includes(e.difficulty));
     }
+    // Remove favorites from main list when favorites section is shown
+    if (favoriteIds.length > 0) {
+      list = list.filter((e) => !favoriteIds.includes(e.id));
+    }
     return list;
-  }, [selectedEquipment, selectedDifficulty]);
+  }, [allExercises, selectedEquipment, selectedDifficulty, favoriteIds]);
 
   const handleFinish = useCallback(() => {
     if (Platform.OS !== 'web') {
@@ -281,29 +306,155 @@ export default function ActiveWorkoutScreen() {
         snapPoints={['60%', '90%']}
       >
         <Text style={dynamicStyles.sheetTitle}>Add Exercise</Text>
+
+        {/* Create Custom Button */}
+        <Pressable
+          onPress={() => {
+            setShowExerciseSheet(false);
+            setShowCustomForm(true);
+          }}
+          style={[styles.createCustomButton, { borderColor: colors.primary, backgroundColor: `rgba(255, 107, 53, ${opacity['8']})` }]}
+        >
+          <Plus size={18} color={colors.primary} strokeWidth={2} />
+          <Text style={[styles.createCustomText, { color: colors.primary }]}>
+            Create Custom Exercise
+          </Text>
+        </Pressable>
+
         <ExerciseFilters
           selectedEquipment={selectedEquipment}
           selectedDifficulty={selectedDifficulty}
           onEquipmentChange={setSelectedEquipment}
           onDifficultyChange={setSelectedDifficulty}
         />
+
         <FlatList
           data={filteredExercises}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            favoriteExercises.length > 0 ? (
+              <View style={styles.favoritesSection}>
+                <View style={styles.favoritesSectionHeader}>
+                  <Star size={14} color={colors.pr} fill={colors.pr} strokeWidth={2} />
+                  <Text style={[styles.favoritesSectionTitle, { color: colors.pr }]}>
+                    Favorites
+                  </Text>
+                </View>
+                {favoriteExercises.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => handleSelectExercise(item)}
+                    onLongPress={() => setTooltipExercise(item)}
+                    style={dynamicStyles.exerciseListItem}
+                  >
+                    <View style={styles.exerciseRow}>
+                      <View style={styles.exerciseInfo}>
+                        <View style={styles.exerciseNameRow}>
+                          <Text style={dynamicStyles.exerciseListName}>{item.name}</Text>
+                          {item.isCustom && (
+                            <Tag
+                              label="Custom"
+                              color={colors.primary}
+                              size="sm"
+                              icon={<Sparkles size={9} color={colors.primary} strokeWidth={2} />}
+                            />
+                          )}
+                        </View>
+                        <Text style={dynamicStyles.exerciseListMuscle}>
+                          {item.primaryMuscle} | {item.equipment}
+                        </Text>
+                      </View>
+                      <Pressable
+                        onPress={() => {
+                          if (Platform.OS !== 'web') {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          }
+                          toggleFavorite(item.id);
+                        }}
+                        hitSlop={8}
+                      >
+                        <Heart size={18} color="#EF4444" fill="#EF4444" strokeWidth={2} />
+                      </Pressable>
+                    </View>
+                  </Pressable>
+                ))}
+                <View style={[styles.sectionDivider, { borderBottomColor: colors.border }]} />
+              </View>
+            ) : null
+          }
           renderItem={({ item }) => (
             <Pressable
               onPress={() => handleSelectExercise(item)}
+              onLongPress={() => setTooltipExercise(item)}
               style={dynamicStyles.exerciseListItem}
             >
-              <Text style={dynamicStyles.exerciseListName}>{item.name}</Text>
-              <Text style={dynamicStyles.exerciseListMuscle}>
-                {item.primaryMuscle} | {item.equipment}
-              </Text>
+              <View style={styles.exerciseRow}>
+                <View style={styles.exerciseInfo}>
+                  <View style={styles.exerciseNameRow}>
+                    <Text style={dynamicStyles.exerciseListName}>{item.name}</Text>
+                    {item.isCustom && (
+                      <Tag
+                        label="Custom"
+                        color={colors.primary}
+                        size="sm"
+                        icon={<Sparkles size={9} color={colors.primary} strokeWidth={2} />}
+                      />
+                    )}
+                  </View>
+                  <Text style={dynamicStyles.exerciseListMuscle}>
+                    {item.primaryMuscle} | {item.equipment}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => {
+                    if (Platform.OS !== 'web') {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }
+                    toggleFavorite(item.id);
+                  }}
+                  hitSlop={8}
+                >
+                  <Heart
+                    size={18}
+                    color={favoriteIds.includes(item.id) ? '#EF4444' : colors.textTertiary}
+                    fill={favoriteIds.includes(item.id) ? '#EF4444' : 'none'}
+                    strokeWidth={2}
+                  />
+                </Pressable>
+              </View>
             </Pressable>
           )}
         />
       </BottomSheet>
+
+      <CustomExerciseForm
+        isOpen={showCustomForm}
+        onClose={() => setShowCustomForm(false)}
+      />
+
+      {/* Exercise Detail Tooltip */}
+      <Modal
+        visible={tooltipExercise !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTooltipExercise(null)}
+      >
+        <Pressable
+          style={styles.tooltipOverlay}
+          onPress={() => setTooltipExercise(null)}
+        >
+          <View style={styles.tooltipContainer}>
+            {tooltipExercise && (
+              <ExerciseDetailTooltip
+                exercise={tooltipExercise}
+                visible
+                onClose={() => setTooltipExercise(null)}
+              />
+            )}
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }

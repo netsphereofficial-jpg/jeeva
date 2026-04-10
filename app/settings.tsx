@@ -34,11 +34,13 @@ import { spacing, radius } from '@/theme/spacing';
 import { useAchievementStore } from '@/stores/achievementStore';
 import { ACHIEVEMENTS } from '@/data/achievements';
 
-type ThemeMode = 'dark' | 'light' | 'system';
+type ThemeMode = 'dark' | 'light' | 'system' | 'arctic' | 'midnight';
 
 const THEME_OPTIONS: { mode: ThemeMode; icon: typeof Sun; label: string; description: string }[] = [
   { mode: 'dark', icon: Moon, label: 'Dark', description: 'Obsidian Forge' },
   { mode: 'light', icon: Sun, label: 'Light', description: 'Warm Stone' },
+  { mode: 'arctic', icon: Droplets, label: 'Arctic', description: 'Arctic Blue' },
+  { mode: 'midnight', icon: Moon, label: 'Midnight', description: 'Midnight Gold' },
   { mode: 'system', icon: Smartphone, label: 'System', description: 'Follow device' },
 ];
 
