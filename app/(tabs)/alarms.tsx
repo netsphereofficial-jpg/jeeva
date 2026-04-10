@@ -9,10 +9,19 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import {
   Plus,
   Bell,
+  Moon,
   Sun,
   Dumbbell,
   Pill,
@@ -20,7 +29,6 @@ import {
 } from 'lucide-react-native';
 
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { MonoText } from '@/components/ui/MonoText';
@@ -125,6 +133,52 @@ export default function AlarmsScreen() {
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${opacity['10']})`;
   }, [colors]);
+
+  // Floating + rotation animation for alarms empty state (Moon)
+  const alarmFloatY = useSharedValue(0);
+  const alarmRotate = useSharedValue(0);
+  React.useEffect(() => {
+    alarmFloatY.value = withRepeat(
+      withSequence(
+        withTiming(8, { duration: 2000 }),
+        withTiming(-8, { duration: 2000 }),
+      ),
+      -1,
+      true,
+    );
+    alarmRotate.value = withRepeat(
+      withSequence(
+        withTiming(5, { duration: 2500 }),
+        withTiming(-5, { duration: 2500 }),
+      ),
+      -1,
+      true,
+    );
+  }, [alarmFloatY, alarmRotate]);
+
+  const alarmFloatingStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: alarmFloatY.value },
+      { rotate: `${alarmRotate.value}deg` },
+    ],
+  }));
+
+  // Pulse animation for medications empty state (Pill)
+  const medPulse = useSharedValue(1);
+  React.useEffect(() => {
+    medPulse.value = withRepeat(
+      withSequence(
+        withTiming(1.05, { duration: 1500 }),
+        withTiming(1, { duration: 1500 }),
+      ),
+      -1,
+      true,
+    );
+  }, [medPulse]);
+
+  const medPulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: medPulse.value }],
+  }));
 
   const dynamicStyles = useMemo(() => StyleSheet.create({
     container: {
@@ -254,12 +308,20 @@ export default function AlarmsScreen() {
               );
             })
           ) : (
-            <EmptyState
-              icon={Bell}
-              message="No alarms yet"
-              actionLabel="Add Alarm"
-              onAction={handleOpenAlarmForm}
-            />
+            <Animated.View entering={FadeInDown.delay(200).springify()} style={emptyStyles.emptyContainer}>
+              <Animated.View style={alarmFloatingStyle}>
+                <View style={[emptyStyles.emptyIconCircle, { backgroundColor: colors.surfaceGlass }]}>
+                  <Moon size={48} color={colors.primary} strokeWidth={1.5} />
+                </View>
+              </Animated.View>
+              <Text style={[emptyStyles.emptyTitle, { color: colors.textPrimary }]}>
+                Sweet dreams await
+              </Text>
+              <Text style={[emptyStyles.emptySubtitle, { color: colors.textSecondary }]}>
+                Set your first alarm to start your routine
+              </Text>
+              <Button variant="primary" label="Add Alarm" onPress={handleOpenAlarmForm} style={emptyStyles.emptyCTA} />
+            </Animated.View>
           )
         ) : (
           /* ── Medications Segment ───────────────── */
@@ -304,12 +366,20 @@ export default function AlarmsScreen() {
               </View>
             </>
           ) : (
-            <EmptyState
-              icon={Pill}
-              message="No medications tracked"
-              actionLabel="Add Medication"
-              onAction={handleOpenMedForm}
-            />
+            <Animated.View entering={FadeInDown.delay(200).springify()} style={emptyStyles.emptyContainer}>
+              <Animated.View style={medPulseStyle}>
+                <View style={[emptyStyles.emptyIconCircle, { backgroundColor: colors.surfaceGlass }]}>
+                  <Pill size={48} color={colors.primary} strokeWidth={1.5} />
+                </View>
+              </Animated.View>
+              <Text style={[emptyStyles.emptyTitle, { color: colors.textPrimary }]}>
+                Stay on track
+              </Text>
+              <Text style={[emptyStyles.emptySubtitle, { color: colors.textSecondary }]}>
+                Add your medications to never miss a dose
+              </Text>
+              <Button variant="primary" label="Add Medication" onPress={handleOpenMedForm} style={emptyStyles.emptyCTA} />
+            </Animated.View>
           )
         )}
       </ScrollView>
@@ -445,5 +515,38 @@ const styles = StyleSheet.create({
   formSaveBtn: {
     marginTop: spacing.sm,
     marginBottom: spacing['4xl'],
+  },
+});
+
+const emptyStyles = StyleSheet.create({
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+  },
+  emptyIconCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 22,
+    textAlign: 'center',
+    marginTop: 24,
+  },
+  emptySubtitle: {
+    fontFamily: 'DMSans_400Regular',
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginTop: 8,
+  },
+  emptyCTA: {
+    marginTop: 24,
+    minWidth: 200,
   },
 });

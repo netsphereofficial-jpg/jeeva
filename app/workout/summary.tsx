@@ -25,6 +25,8 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { InsightCard } from '@/components/workout/InsightCard';
+import { generateWorkoutInsights } from '@/utils/workoutInsights';
 import { opacity } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 import type { TemplateExercise } from '@/types';
@@ -57,6 +59,11 @@ export default function WorkoutSummaryScreen() {
       (pr) => pr.workoutId === lastWorkout.id,
     ).length;
   }, [lastWorkout, personalRecords]);
+
+  const insights = useMemo(() => {
+    if (!lastWorkout) return [];
+    return generateWorkoutInsights(lastWorkout, history, personalRecords);
+  }, [lastWorkout, history, personalRecords]);
 
   const handleDone = () => {
     if (Platform.OS !== 'web') {
@@ -282,6 +289,16 @@ export default function WorkoutSummaryScreen() {
           })}
         </View>
 
+        {/* Smart Insights */}
+        {insights.length > 0 && (
+          <View style={styles.insightsSection}>
+            <Text style={dynamicStyles.sectionTitle}>Insights</Text>
+            {insights.map((insight, idx) => (
+              <InsightCard key={insight.type} insight={insight} index={idx} />
+            ))}
+          </View>
+        )}
+
         <View style={styles.breakdownSection}>
           <Text style={dynamicStyles.sectionTitle}>Exercise Breakdown</Text>
           {lastWorkout.exercises.map((ex) => {
@@ -378,6 +395,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     paddingVertical: spacing.xl,
+  },
+  insightsSection: {
+    marginBottom: spacing.xl,
   },
   breakdownSection: {
     marginBottom: spacing['2xl'],

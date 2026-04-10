@@ -2,12 +2,19 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, FlatList, ScrollView, Pressable, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Dumbbell, Clock } from 'lucide-react-native';
+import Animated, {
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { Dumbbell, Clock, BarChart3 } from 'lucide-react-native';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { MonoText } from '@/components/ui/MonoText';
 import { Tag } from '@/components/ui/Tag';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { VolumeTrendChart } from '@/components/workout/VolumeTrendChart';
 import { MuscleGroupChart } from '@/components/workout/MuscleGroupChart';
@@ -61,6 +68,40 @@ export default function WorkoutTabScreen() {
   const recentPRs = useMemo(() => getRecentPRs(personalRecords), [personalRecords]);
   const streak = useMemo(() => getWorkoutStreak(history), [history]);
   const heatmapData = useMemo(() => getWorkoutHeatmapData(history), [history]);
+
+  // Floating animation for empty state icons
+  const floatY = useSharedValue(0);
+  React.useEffect(() => {
+    floatY.value = withRepeat(
+      withSequence(
+        withTiming(8, { duration: 2000 }),
+        withTiming(-8, { duration: 2000 }),
+      ),
+      -1,
+      true,
+    );
+  }, [floatY]);
+
+  const floatingStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: floatY.value }],
+  }));
+
+  // Growing animation for analytics icon
+  const growScale = useSharedValue(0.6);
+  React.useEffect(() => {
+    growScale.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 2000 }),
+        withTiming(0.6, { duration: 2000 }),
+      ),
+      -1,
+      true,
+    );
+  }, [growScale]);
+
+  const growingStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleY: growScale.value }],
+  }));
 
   const dynamicStyles = useMemo(() => StyleSheet.create({
     container: {
@@ -158,12 +199,20 @@ export default function WorkoutTabScreen() {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <EmptyState
-              icon={Dumbbell}
-              message="Complete your first workout to see history"
-              actionLabel="Start Workout"
-              onAction={handleStartWorkout}
-            />
+            <Animated.View entering={FadeInDown.delay(200).springify()} style={emptyStyles.emptyContainer}>
+              <Animated.View style={floatingStyle}>
+                <View style={[emptyStyles.emptyIconCircle, { backgroundColor: colors.surfaceGlass }]}>
+                  <Dumbbell size={48} color={colors.primary} strokeWidth={1.5} />
+                </View>
+              </Animated.View>
+              <Text style={[emptyStyles.emptyTitle, { color: colors.textPrimary }]}>
+                Ready to crush it?
+              </Text>
+              <Text style={[emptyStyles.emptySubtitle, { color: colors.textSecondary }]}>
+                Your first workout is just a tap away
+              </Text>
+              <Button variant="primary" label="Start Workout" onPress={handleStartWorkout} style={emptyStyles.emptyCTA} />
+            </Animated.View>
           }
         />
       ) : (
@@ -172,12 +221,20 @@ export default function WorkoutTabScreen() {
           showsVerticalScrollIndicator={false}
         >
           {history.length === 0 ? (
-            <EmptyState
-              icon={Dumbbell}
-              message="Complete workouts to see analytics"
-              actionLabel="Start Workout"
-              onAction={handleStartWorkout}
-            />
+            <Animated.View entering={FadeInDown.delay(200).springify()} style={emptyStyles.emptyContainer}>
+              <Animated.View style={growingStyle}>
+                <View style={[emptyStyles.emptyIconCircle, { backgroundColor: colors.surfaceGlass }]}>
+                  <BarChart3 size={48} color={colors.primary} strokeWidth={1.5} />
+                </View>
+              </Animated.View>
+              <Text style={[emptyStyles.emptyTitle, { color: colors.textPrimary }]}>
+                Your data story begins
+              </Text>
+              <Text style={[emptyStyles.emptySubtitle, { color: colors.textSecondary }]}>
+                Complete a few workouts and watch your progress unfold
+              </Text>
+              <Button variant="primary" label="Start Workout" onPress={handleStartWorkout} style={emptyStyles.emptyCTA} />
+            </Animated.View>
           ) : (
             <>
               <WorkoutHeatmap data={heatmapData} />
@@ -245,5 +302,38 @@ const styles = StyleSheet.create({
   },
   chartCard: {
     // No extra spacing needed, gap handles it
+  },
+});
+
+const emptyStyles = StyleSheet.create({
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+  },
+  emptyIconCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 22,
+    textAlign: 'center',
+    marginTop: 24,
+  },
+  emptySubtitle: {
+    fontFamily: 'DMSans_400Regular',
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginTop: 8,
+  },
+  emptyCTA: {
+    marginTop: 24,
+    minWidth: 200,
   },
 });
