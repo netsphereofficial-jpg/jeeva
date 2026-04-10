@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
+import { AccessibilityInfo, View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -64,6 +64,10 @@ export function WaterTracker({ animationIndex = 0 }: WaterTrackerProps) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     addWater(amount);
+    const newTotal = total + amount;
+    AccessibilityInfo.announceForAccessibility(
+      `Added ${amount} milliliters. Total: ${newTotal} of ${goal} milliliters`,
+    );
   };
 
   const handleUndo = () => {
@@ -123,7 +127,12 @@ export function WaterTracker({ animationIndex = 0 }: WaterTrackerProps) {
           <Droplets size={18} color={colors.water} strokeWidth={2} />
           <Text style={dynamicStyles.headerLabel}>Hydration</Text>
         </View>
-        <Pressable onPress={handleUndo} hitSlop={12}>
+        <Pressable
+          onPress={handleUndo}
+          hitSlop={12}
+          accessibilityLabel="Undo last water entry"
+          accessibilityRole="button"
+        >
           <Undo2 size={18} color={colors.textTertiary} strokeWidth={2} />
         </Pressable>
       </View>
@@ -172,6 +181,8 @@ export function WaterTracker({ animationIndex = 0 }: WaterTrackerProps) {
             key={amount}
             style={dynamicStyles.quickButton}
             onPress={() => handleAdd(amount)}
+            accessibilityLabel={`Add ${amount} milliliters`}
+            accessibilityRole="button"
           >
             <Plus size={14} color={colors.water} strokeWidth={2.5} />
             <MonoText size={13} color={colors.water}>

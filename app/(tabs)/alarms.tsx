@@ -191,9 +191,9 @@ export default function AlarmsScreen() {
       color: colors.textPrimary,
     },
     addBtn: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       backgroundColor: colors.surfaceGlassBorder,
       justifyContent: 'center',
       alignItems: 'center',
@@ -260,6 +260,8 @@ export default function AlarmsScreen() {
           onPress={activeSegment === 0 ? handleOpenAlarmForm : handleOpenMedForm}
           style={dynamicStyles.addBtn}
           hitSlop={8}
+          accessibilityLabel={activeSegment === 0 ? 'Add alarm' : 'Add medication'}
+          accessibilityRole="button"
         >
           <Plus size={22} color={colors.textPrimary} strokeWidth={2.5} />
         </Pressable>

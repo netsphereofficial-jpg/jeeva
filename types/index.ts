@@ -77,6 +77,8 @@ export interface WorkoutExercise {
   sets: WorkoutSet[];
   notes?: string;
   restTimerSec: number;
+  supersetGroupId?: string; // exercises with same groupId are in a superset
+  supersetLabel?: string;   // e.g., "A1", "A2", "B1", "B2"
 }
 
 export type WorkoutStatus = 'active' | 'paused' | 'completed';

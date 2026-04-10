@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { AccessibilityInfo, View, Text, StyleSheet, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -32,6 +32,7 @@ export function PRBadge({ weight, reps, volume, previousVolume }: PRBadgeProps) 
     if (Platform.OS !== 'web') {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
+    AccessibilityInfo.announceForAccessibility('New personal record!');
   }, [scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({

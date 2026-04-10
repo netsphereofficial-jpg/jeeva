@@ -116,6 +116,8 @@ export default function DashboardScreen() {
               }}
               hitSlop={12}
               style={[styles.settingsButton, { backgroundColor: colors.surfaceGlass }]}
+              accessibilityLabel="Open profile"
+              accessibilityRole="button"
             >
               <User size={20} color={colors.textSecondary} strokeWidth={2} />
             </Pressable>
@@ -208,8 +210,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   settingsButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',

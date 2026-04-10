@@ -118,7 +118,13 @@ export function AlarmCard({ alarm, onToggle, onDelete, animationIndex = 0 }: Ala
         </View>
         <View style={styles.rightControls}>
           <Toggle value={alarm.enabled} onToggle={handleToggle} />
-          <Pressable onPress={handleDelete} hitSlop={8} style={styles.deleteBtn}>
+          <Pressable
+            onPress={handleDelete}
+            hitSlop={8}
+            style={styles.deleteBtn}
+            accessibilityLabel="Delete alarm"
+            accessibilityRole="button"
+          >
             <Trash2 size={18} color={colors.textTertiary} strokeWidth={1.5} />
           </Pressable>
         </View>
@@ -169,6 +175,10 @@ const styles = StyleSheet.create({
   },
   deleteBtn: {
     padding: spacing.xs,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   timeDisplay: {
     flexDirection: 'row',
