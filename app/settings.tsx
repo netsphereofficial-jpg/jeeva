@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
+  TextInput,
   Pressable,
   StyleSheet,
   Platform,
@@ -20,6 +21,7 @@ import {
   Vibrate,
   Scale,
   Check,
+  User,
 } from 'lucide-react-native';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -44,6 +46,7 @@ export default function SettingsScreen() {
   const { colors, isDark, mode, setMode } = useAppTheme();
   const settings = useSettingsStore((s) => s.settings);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
+  const [nameInput, setNameInput] = useState(settings.userName ?? '');
 
   const handleBack = () => {
     if (Platform.OS !== 'web') {
@@ -104,6 +107,24 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Profile Section */}
+        <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>PROFILE</Text>
+        <Card variant="default" style={styles.sectionCard}>
+          <View style={[styles.settingRow, styles.lastOption]}>
+            <View style={[styles.themeIconWrap, { backgroundColor: colors.surfaceGlass }]}>
+              <User size={18} color={colors.textTertiary} strokeWidth={2} />
+            </View>
+            <TextInput
+              style={[styles.nameInput, { color: colors.textPrimary, borderColor: colors.borderLight, backgroundColor: colors.surfaceGlass }]}
+              value={nameInput}
+              onChangeText={setNameInput}
+              onBlur={() => updateSettings({ userName: nameInput.trim() || undefined })}
+              placeholder="Your name"
+              placeholderTextColor={colors.textTertiary}
+            />
+          </View>
+        </Card>
+
         {/* Theme Section */}
         <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>APPEARANCE</Text>
         <Card variant="default" style={styles.sectionCard}>
@@ -347,5 +368,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_700Bold',
     fontSize: 16,
     letterSpacing: 3,
+  },
+  nameInput: {
+    flex: 1,
+    fontFamily: 'DMSans_500Medium',
+    fontSize: 15,
+    borderRadius: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    minHeight: 44,
   },
 });

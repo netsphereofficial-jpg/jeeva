@@ -18,6 +18,8 @@ import { QuickStats } from '@/components/dashboard/QuickStats';
 import { WaterTracker } from '@/components/dashboard/WaterTracker';
 import { SleepCard } from '@/components/dashboard/SleepCard';
 import { WeeklySteps } from '@/components/dashboard/WeeklySteps';
+import { QuoteCard } from '@/components/dashboard/QuoteCard';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { GoalProgress } from '@/components/dashboard/GoalProgress';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { textPresets } from '@/theme/typography';
@@ -38,6 +40,7 @@ function getFormattedDate(): string {
 export default function DashboardScreen() {
   const { colors, isDark } = useAppTheme();
   const router = useRouter();
+  const userName = useSettingsStore((s) => s.settings.userName);
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(() => {
@@ -102,7 +105,9 @@ export default function DashboardScreen() {
           <View style={styles.greetingTopRow}>
             <View style={styles.greetingRow}>
               {getGreetingIcon()}
-              <Text style={dynamicStyles.greetingText}>{greeting}</Text>
+              <Text style={dynamicStyles.greetingText}>
+                {greeting}{userName ? `, ${userName}` : ''}
+              </Text>
             </View>
             <Pressable
               onPress={() => {
@@ -139,8 +144,13 @@ export default function DashboardScreen() {
 
         <View style={styles.spacer} />
 
+        {/* Daily Quote */}
+        <QuoteCard animationIndex={7} />
+
+        <View style={styles.spacer} />
+
         {/* GoalProgress */}
-        <GoalProgress animationIndex={7} />
+        <GoalProgress animationIndex={8} />
 
         {/* Bottom padding to clear tab bar + FAB */}
         <View style={styles.bottomPadding} />

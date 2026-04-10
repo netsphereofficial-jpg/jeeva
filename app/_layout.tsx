@@ -1,7 +1,7 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
@@ -36,6 +36,7 @@ import {
 
 import { AppThemeProvider } from '@/contexts/ThemeContext';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -45,7 +46,15 @@ export const unstable_settings = {
 
 function RootLayoutInner() {
   const { isDark, colors } = useAppTheme();
-  const routerRef = React.useRef<ReturnType<typeof import('expo-router').useRouter> | null>(null);
+  const router = useRouter();
+  const hasOnboarded = useOnboardingStore((s) => s.hasOnboarded);
+
+  // Redirect to onboarding if the user hasn't completed it
+  React.useEffect(() => {
+    if (!hasOnboarded) {
+      router.replace('/onboarding');
+    }
+  }, [hasOnboarded, router]);
 
   // Listen for notification taps to open alarm ring screen
   React.useEffect(() => {
@@ -118,6 +127,14 @@ function RootLayoutInner() {
         />
         <Stack.Screen
           name="alarm-ring"
+          options={{
+            presentation: 'fullScreenModal',
+            animation: 'fade',
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="onboarding"
           options={{
             presentation: 'fullScreenModal',
             animation: 'fade',

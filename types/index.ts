@@ -9,6 +9,7 @@ export interface UserSettings {
   restTimerDefaultSec: number;
   hapticEnabled: boolean;
   themeMode?: 'dark' | 'light' | 'system';
+  userName?: string;
 }
 
 // ── Exercise Catalog ─────────────────────────────────────────────
