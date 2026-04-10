@@ -86,3 +86,56 @@ export function getRelativeTime(timestamp: number): string {
   if (diffDay < 30) return `${Math.floor(diffDay / 7)} wk ago`;
   return `${Math.floor(diffDay / 30)} mo ago`;
 }
+
+// ─── Volume Formatting ────────────────────────────────────────
+
+export function formatVolume(volume: number): string {
+  if (volume >= 1_000_000) {
+    const val = volume / 1_000_000;
+    return `${val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)}M`;
+  }
+  if (volume >= 1_000) {
+    const val = volume / 1_000;
+    return `${val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)}k`;
+  }
+  return volume.toFixed(0);
+}
+
+// ─── Water Streak ─────────────────────────────────────────────
+
+import type { WaterEntry } from '@/types';
+
+function getDateStr(timestamp: number): string {
+  const d = new Date(timestamp);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export function getWaterStreak(entries: WaterEntry[], goal: number): number {
+  if (entries.length === 0 || goal <= 0) return 0;
+
+  // Aggregate daily totals
+  const dailyTotals: Record<string, number> = {};
+  for (const entry of entries) {
+    const dateKey = getDateStr(entry.timestamp);
+    dailyTotals[dateKey] = (dailyTotals[dateKey] ?? 0) + entry.amountMl;
+  }
+
+  // Walk backwards from today counting consecutive days where total >= goal
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let streak = 0;
+  const ONE_DAY = 24 * 60 * 60 * 1000;
+
+  for (let i = 0; i < 365; i++) {
+    const checkDate = new Date(today.getTime() - i * ONE_DAY);
+    const key = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+    const total = dailyTotals[key] ?? 0;
+    if (total >= goal) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+
+  return streak;
+}

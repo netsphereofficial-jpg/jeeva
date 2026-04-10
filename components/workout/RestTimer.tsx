@@ -1,5 +1,15 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  withSpring,
+  Easing,
+  FadeIn,
+} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { CircularProgress } from '@/components/ui/CircularProgress';
 import { MonoText } from '@/components/ui/MonoText';
@@ -26,32 +36,99 @@ export function RestTimer({
   nextExerciseName,
   nextSetInfo,
 }: RestTimerProps) {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
+
+  // Breathing circle animation
+  const breatheScale = useSharedValue(1);
+  const glowOpacity = useSharedValue(0.15);
+  const ringPulse = useSharedValue(1);
+
+  useEffect(() => {
+    if (isVisible) {
+      // Breathing: 4s inhale + 4s exhale
+      breatheScale.value = withRepeat(
+        withSequence(
+          withTiming(1.15, { duration: 4000, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 4000, easing: Easing.inOut(Easing.ease) }),
+        ),
+        -1,
+        false,
+      );
+
+      // Background glow pulse
+      glowOpacity.value = withRepeat(
+        withSequence(
+          withTiming(0.3, { duration: 2000 }),
+          withTiming(0.1, { duration: 2000 }),
+        ),
+        -1,
+        true,
+      );
+
+      // Ring outer pulse
+      ringPulse.value = withRepeat(
+        withSequence(
+          withTiming(1.03, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+        ),
+        -1,
+        true,
+      );
+    }
+  }, [isVisible, breatheScale, glowOpacity, ringPulse]);
+
+  const breatheStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: breatheScale.value }],
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+  }));
+
+  const ringPulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: ringPulse.value }],
+  }));
 
   const dynamicStyles = useMemo(() => StyleSheet.create({
     overlay: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: colors.overlay,
+      backgroundColor: isDark ? 'rgba(10,10,15,0.95)' : 'rgba(0,0,0,0.85)',
       justifyContent: 'center',
       alignItems: 'center',
       zIndex: 100,
     },
+    backgroundGlow: {
+      position: 'absolute',
+      width: 400,
+      height: 400,
+      borderRadius: 200,
+      backgroundColor: colors.sleep,
+    },
+    breatheLabel: {
+      fontFamily: 'DMSans_500Medium',
+      fontSize: 12,
+      color: colors.sleep,
+      letterSpacing: 2,
+      textTransform: 'uppercase',
+      marginTop: spacing.sm,
+    },
     restLabel: {
-      fontFamily: 'DMSans_600SemiBold',
-      fontSize: 14,
+      fontFamily: 'Outfit_600SemiBold',
+      fontSize: 13,
       color: colors.textTertiary,
       marginTop: spacing.xs,
-      letterSpacing: 2,
+      letterSpacing: 3,
+      textTransform: 'uppercase',
     },
     nextUpLabel: {
       fontFamily: 'DMSans_400Regular',
-      fontSize: 13,
+      fontSize: 12,
       color: colors.textTertiary,
       textTransform: 'uppercase',
-      letterSpacing: 1,
+      letterSpacing: 1.5,
     },
     nextExercise: {
-      fontFamily: 'DMSans_600SemiBold',
+      fontFamily: 'Outfit_600SemiBold',
       fontSize: 17,
       color: colors.textPrimary,
     },
@@ -62,14 +139,14 @@ export function RestTimer({
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
-      minWidth: 48,
+      minWidth: 50,
       alignItems: 'center',
     },
     durationPillActive: {
       backgroundColor: `rgba(139, 92, 246, ${opacity['15']})`,
       borderColor: colors.sleep,
     },
-  }), [colors]);
+  }), [colors, isDark]);
 
   if (!isVisible) return null;
 
@@ -78,6 +155,10 @@ export function RestTimer({
   const minutes = Math.floor(timeRemaining / 60);
   const seconds = timeRemaining % 60;
   const timeDisplay = `${minutes}:${String(seconds).padStart(2, '0')}`;
+
+  // Determine breathing text
+  const breatheCycle = Math.floor(Date.now() / 4000) % 2;
+  const breatheText = breatheCycle === 0 ? 'Breathe In' : 'Breathe Out';
 
   const handleExtend = () => {
     if (Platform.OS !== 'web') {
@@ -94,22 +175,34 @@ export function RestTimer({
   };
 
   return (
-    <View style={dynamicStyles.overlay}>
+    <Animated.View entering={FadeIn.duration(300)} style={dynamicStyles.overlay}>
+      {/* Background radial glow */}
+      <Animated.View style={[dynamicStyles.backgroundGlow, glowStyle]} />
+
       <View style={styles.content}>
-        <View style={styles.ringContainer}>
+        {/* Pulsing ring with countdown */}
+        <Animated.View style={[styles.ringContainer, ringPulseStyle]}>
           <CircularProgress
             progress={progress}
             size={220}
             color={colors.sleep}
             strokeWidth={8}
+            glow
           >
-            <MonoText size={64} color={colors.textPrimary} weight="bold">
+            <MonoText size={56} color={colors.textPrimary} weight="bold">
               {timeDisplay}
             </MonoText>
             <Text style={dynamicStyles.restLabel}>REST</Text>
           </CircularProgress>
-        </View>
+        </Animated.View>
 
+        {/* Breathing circle indicator */}
+        <Animated.View style={[styles.breatheCircle, breatheStyle]}>
+          <View style={[styles.breatheDot, { backgroundColor: colors.sleep }]} />
+        </Animated.View>
+        <Text style={dynamicStyles.breatheLabel}>{breatheText}</Text>
+
+        {/* Next up info */}
         {(nextExerciseName || nextSetInfo) && (
           <View style={styles.nextUp}>
             <Text style={dynamicStyles.nextUpLabel}>Next up</Text>
@@ -124,6 +217,7 @@ export function RestTimer({
           </View>
         )}
 
+        {/* Controls */}
         <View style={styles.controls}>
           <Button
             variant="secondary"
@@ -140,6 +234,7 @@ export function RestTimer({
           />
         </View>
 
+        {/* Duration pills */}
         <View style={styles.durationSelector}>
           {DURATION_OPTIONS.map((dur) => (
             <Pressable
@@ -152,7 +247,8 @@ export function RestTimer({
             >
               <MonoText
                 size={13}
-                color={duration === dur ? colors.textPrimary : colors.textTertiary}
+                color={duration === dur ? colors.sleep : colors.textTertiary}
+                weight={duration === dur ? 'bold' : 'regular'}
               >
                 {dur}s
               </MonoText>
@@ -160,7 +256,7 @@ export function RestTimer({
           ))}
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -171,11 +267,25 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   ringContainer: {
-    marginBottom: spacing['3xl'],
+    marginBottom: spacing.lg,
+  },
+  breatheCircle: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  breatheDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   nextUp: {
     alignItems: 'center',
-    marginBottom: spacing['3xl'],
+    marginTop: spacing.xl,
+    marginBottom: spacing['2xl'],
     gap: spacing.xs,
   },
   controls: {

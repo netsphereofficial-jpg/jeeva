@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     height: spacing.lg,
   },
   bottomPadding: {
-    height: 140,
+    height: 180,
   },
   fabContainer: {
     position: 'absolute',
