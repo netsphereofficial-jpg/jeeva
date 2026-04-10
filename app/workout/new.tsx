@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { ChevronLeft, Calendar } from 'lucide-react-native';
+import { ChevronLeft, Calendar, Star, Heart, Sparkles } from 'lucide-react-native';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Card } from '@/components/ui/Card';
 import { Tag } from '@/components/ui/Tag';
@@ -20,11 +20,13 @@ import { ProgramCard } from '@/components/workout/ProgramCard';
 import { ProgramDayPicker } from '@/components/workout/ProgramDayPicker';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useTemplateStore } from '@/stores/templateStore';
+import { useCustomExerciseStore } from '@/stores/customExerciseStore';
 import { getExercisesByGroup, EXERCISES } from '@/data/exercises';
 import { PROGRAMS } from '@/data/programs';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { radius, spacing } from '@/theme/spacing';
 import type {
+  Exercise,
   MuscleGroupCategory,
   Program,
   WorkoutExercise,
@@ -56,9 +58,36 @@ function buildWorkoutExercisesFromTemplate(
 
 function buildWorkoutExercisesFromGroup(
   group: MuscleGroupCategory,
+  favIds: string[],
+  customExs: Exercise[],
 ): WorkoutExercise[] {
-  const exercises = getExercisesByGroup(group).slice(0, 6);
-  return exercises.map((ex) => ({
+  const groupMap: Record<string, string[]> = {
+    chest: ['chest'],
+    back: ['back', 'lats'],
+    shoulders: ['shoulders', 'traps'],
+    biceps: ['biceps'],
+    triceps: ['triceps'],
+    legs: ['quads', 'hamstrings', 'glutes', 'calves'],
+    core: ['abs'],
+    fullbody: ['full_body'],
+  };
+  const targets = groupMap[group] ?? [group];
+
+  // Get all exercises for this group (custom + built-in)
+  const allGroupExercises = [
+    ...customExs.filter((e) => targets.includes(e.primaryMuscle)),
+    ...getExercisesByGroup(group),
+  ];
+
+  // Separate favorites and non-favorites for this group
+  const favExercises = allGroupExercises.filter((e) => favIds.includes(e.id));
+  const nonFavExercises = allGroupExercises.filter((e) => !favIds.includes(e.id));
+
+  // Favorites first, then fill up to 6 total
+  const maxNonFav = Math.max(0, 6 - favExercises.length);
+  const combined = [...favExercises, ...nonFavExercises.slice(0, maxNonFav)];
+
+  return combined.map((ex) => ({
     id: generateId(),
     exerciseId: ex.id,
     exercise: ex,
@@ -99,6 +128,9 @@ export default function NewWorkoutScreen() {
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const templates = useTemplateStore((s) => s.templates);
   const getTodaysTemplate = useTemplateStore((s) => s.getTodaysTemplate);
+  const customExercises = useCustomExerciseStore((s) => s.exercises);
+  const favoriteIds = useCustomExerciseStore((s) => s.favoriteIds);
+  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<MuscleGroupCategory | null>(null);
 
   const todaysTemplate = useMemo(() => getTodaysTemplate(), [getTodaysTemplate]);
 
@@ -122,7 +154,7 @@ export default function NewWorkoutScreen() {
   };
 
   const handleSelectGroup = (group: MuscleGroupCategory) => {
-    const exercises = buildWorkoutExercisesFromGroup(group);
+    const exercises = buildWorkoutExercisesFromGroup(group, favoriteIds, customExercises);
     const label = GROUP_LABELS[group] ?? group;
     startWorkout(`${label} Workout`, exercises);
     const workout = useWorkoutStore.getState().activeWorkout;

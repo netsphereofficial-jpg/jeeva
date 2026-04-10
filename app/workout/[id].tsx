@@ -495,4 +495,62 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.lg,
   },
+  createCustomButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderRadius: radius.md,
+    marginBottom: spacing.md,
+  },
+  createCustomText: {
+    fontFamily: 'DMSans_600SemiBold',
+    fontSize: 14,
+  },
+  exerciseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  exerciseInfo: {
+    flex: 1,
+  },
+  exerciseNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  favoritesSection: {
+    marginBottom: spacing.sm,
+  },
+  favoritesSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  favoritesSectionTitle: {
+    fontFamily: 'DMSans_600SemiBold',
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sectionDivider: {
+    borderBottomWidth: 1,
+    marginTop: spacing.sm,
+  },
+  tooltipOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  tooltipContainer: {
+    width: '100%',
+    maxWidth: 400,
+  },
 });
