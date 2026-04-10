@@ -18,6 +18,7 @@ interface NumberInputProps {
   min?: number;
   max?: number;
   step?: number;
+  compact?: boolean;
 }
 
 export function NumberInput({
@@ -27,6 +28,7 @@ export function NumberInput({
   min,
   max,
   step = 1,
+  compact = false,
 }: NumberInputProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [textValue, setTextValue] = useState(String(value));
@@ -75,6 +77,36 @@ export function NumberInput({
       setTextValue(String(value));
     }
   };
+
+  if (compact) {
+    return (
+      <Pressable style={styles.compactContainer} onPress={handleStartEditing}>
+        {isEditing ? (
+          <TextInput
+            style={styles.compactInput}
+            value={textValue}
+            onChangeText={setTextValue}
+            onBlur={handleEndEditing}
+            onSubmitEditing={handleEndEditing}
+            keyboardType="numeric"
+            autoFocus
+            selectTextOnFocus
+          />
+        ) : (
+          <View style={styles.compactDisplayRow}>
+            <MonoText size={16} color={colors.textPrimary}>
+              {value}
+            </MonoText>
+            {unit && (
+              <MonoText size={10} color={colors.textTertiary}>
+                {unit}
+              </MonoText>
+            )}
+          </View>
+        )}
+      </Pressable>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -165,5 +197,28 @@ const styles = StyleSheet.create({
   },
   unit: {
     marginLeft: 4,
+  },
+  compactContainer: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: radius.sm,
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  compactDisplayRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 3,
+  },
+  compactInput: {
+    fontFamily: 'SpaceMono_400Regular',
+    fontSize: 16,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    minWidth: 40,
+    padding: 0,
   },
 });

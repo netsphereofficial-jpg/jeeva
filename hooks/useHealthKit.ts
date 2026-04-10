@@ -16,7 +16,11 @@ interface UseHealthKitReturn {
 
 export function useHealthKit(): UseHealthKitReturn {
   const [isLoading, setIsLoading] = useState(false);
-  const serviceRef = useRef(getHealthService());
+  // getHealthService() returns a fresh MockHealthService each call
+  const serviceRef = useRef<ReturnType<typeof getHealthService> | null>(null);
+  if (!serviceRef.current) {
+    serviceRef.current = getHealthService();
+  }
 
   const data = useHealthStore((s) => s.data);
   const updateSteps = useHealthStore((s) => s.updateSteps);
@@ -60,12 +64,27 @@ export function useHealthKit(): UseHealthKitReturn {
       const granted = await service.requestPermissions();
       if (granted) {
         setConnected(true);
-        await sync();
+        // Sync data immediately after connecting
+        setIsLoading(true);
+        try {
+          const today = new Date().toISOString().split('T')[0];
+          const [stepData, heartRateData, sleepData] = await Promise.all([
+            service.getSteps(today),
+            service.getHeartRate(),
+            service.getSleep(today),
+          ]);
+          if (stepData) updateSteps(stepData);
+          if (heartRateData) updateHeartRate(heartRateData);
+          if (sleepData) updateSleep(sleepData);
+          setLastSynced(Date.now());
+        } finally {
+          setIsLoading(false);
+        }
       }
     } catch {
       // Permission denied or unavailable
     }
-  }, [setConnected, sync]);
+  }, [setConnected, updateSteps, updateHeartRate, updateSleep, setLastSynced]);
 
   // Auto-sync on mount
   useEffect(() => {

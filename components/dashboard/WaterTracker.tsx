@@ -25,10 +25,20 @@ const QUICK_AMOUNTS = [150, 250, 500] as const;
 export function WaterTracker({ animationIndex = 0 }: WaterTrackerProps) {
   const addWater = useWaterStore((s) => s.addWater);
   const undoLast = useWaterStore((s) => s.undoLast);
-  const getTodayTotal = useWaterStore((s) => s.getTodayTotal);
+  const entries = useWaterStore((s) => s.entries);
   const goal = useWaterStore((s) => s.goal);
 
-  const total = getTodayTotal();
+  // Compute today's total reactively from entries
+  const total = React.useMemo(() => {
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    return entries
+      .filter((e) => {
+        const d = new Date(e.timestamp);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` === today;
+      })
+      .reduce((sum, e) => sum + e.amountMl, 0);
+  }, [entries]);
   const progress = goal > 0 ? Math.min(total / goal, 1) : 0;
   const isComplete = total >= goal;
 

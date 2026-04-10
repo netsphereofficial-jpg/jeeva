@@ -1,10 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { StyleSheet } from 'react-native';
-import GorhomBottomSheet, {
-  BottomSheetBackdrop,
-  BottomSheetView,
-  type BottomSheetBackdropProps,
-} from '@gorhom/bottom-sheet';
+import React from 'react';
+import { Modal, Pressable, View, ScrollView, StyleSheet } from 'react-native';
 import { colors } from '@/theme/colors';
 
 interface BottomSheetProps {
@@ -17,75 +12,62 @@ interface BottomSheetProps {
 export function BottomSheet({
   isOpen,
   onClose,
-  snapPoints: snapPointsProp,
   children,
 }: BottomSheetProps) {
-  const bottomSheetRef = useRef<GorhomBottomSheet>(null);
-  const snapPoints = useMemo(
-    () => snapPointsProp ?? ['50%', '80%'],
-    [snapPointsProp],
-  );
-
-  useEffect(() => {
-    if (isOpen) {
-      bottomSheetRef.current?.snapToIndex(0);
-    } else {
-      bottomSheetRef.current?.close();
-    }
-  }, [isOpen]);
-
-  const handleSheetChanges = useCallback(
-    (index: number) => {
-      if (index === -1) {
-        onClose();
-      }
-    },
-    [onClose],
-  );
-
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        pressBehavior="close"
-        style={[props.style, { backgroundColor: colors.overlay }]}
-      />
-    ),
-    [],
-  );
+  if (!isOpen) return null;
 
   return (
-    <GorhomBottomSheet
-      ref={bottomSheetRef}
-      index={isOpen ? 0 : -1}
-      snapPoints={snapPoints}
-      onChange={handleSheetChanges}
-      enablePanDownToClose
-      backdropComponent={renderBackdrop}
-      backgroundStyle={styles.background}
-      handleIndicatorStyle={styles.handle}
+    <Modal
+      visible={isOpen}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
     >
-      <BottomSheetView style={styles.content}>{children}</BottomSheetView>
-    </GorhomBottomSheet>
+      <View style={styles.overlay}>
+        <Pressable style={styles.backdrop} onPress={onClose} />
+        <View style={styles.sheet}>
+          <View style={styles.handle} />
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  background: {
+  overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.overlay,
+  },
+  sheet: {
     backgroundColor: colors.surfaceElevated,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    maxHeight: '90%',
+    minHeight: '50%',
+    paddingBottom: 34,
   },
   handle: {
+    alignSelf: 'center',
     backgroundColor: colors.textTertiary,
     width: 36,
     height: 4,
     borderRadius: 2,
+    marginTop: 10,
+    marginBottom: 4,
   },
   content: {
-    flex: 1,
     padding: 16,
+    flex: 1,
   },
 });

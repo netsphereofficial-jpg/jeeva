@@ -144,8 +144,8 @@ export class IOSHealthService implements HealthService {
   async isAvailable(): Promise<boolean> {
     try {
       // react-native-health would be imported here
-      // Since the native module may not be linked, catch the error
-      return false;
+      // Fall back to mock availability in simulator/Expo Go
+      return this.fallback.isAvailable();
     } catch {
       return false;
     }
@@ -154,7 +154,8 @@ export class IOSHealthService implements HealthService {
   async requestPermissions(): Promise<boolean> {
     try {
       // Would call AppleHealthKit.initHealthKit with permissions
-      return false;
+      // Fall back to mock in simulator/Expo Go where HealthKit isn't available
+      return this.fallback.requestPermissions();
     } catch {
       return this.fallback.requestPermissions();
     }
@@ -241,26 +242,8 @@ export class AndroidHealthService implements HealthService {
 
 // ── Factory ─────────────────────────────────────────────────────
 
-let _service: HealthService | null = null;
-
+// Always use MockHealthService in Expo Go / simulator.
+// Swap to IOSHealthService / AndroidHealthService when using EAS development builds.
 export function getHealthService(): HealthService {
-  if (_service) return _service;
-
-  if (Platform.OS === 'ios') {
-    try {
-      _service = new IOSHealthService();
-    } catch {
-      _service = new MockHealthService();
-    }
-  } else if (Platform.OS === 'android') {
-    try {
-      _service = new AndroidHealthService();
-    } catch {
-      _service = new MockHealthService();
-    }
-  } else {
-    _service = new MockHealthService();
-  }
-
-  return _service;
+  return new MockHealthService();
 }

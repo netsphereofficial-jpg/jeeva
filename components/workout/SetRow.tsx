@@ -62,6 +62,7 @@ export function SetRow({
           unit="kg"
           min={0}
           step={2.5}
+          compact
         />
       </View>
 
@@ -72,6 +73,7 @@ export function SetRow({
           min={0}
           max={100}
           step={1}
+          compact
         />
       </View>
 
