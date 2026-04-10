@@ -7,6 +7,7 @@ export interface UserSettings {
   dailyWaterGoalMl: number;
   dailyStepGoal: number;
   restTimerDefaultSec: number;
+  hapticEnabled: boolean;
   themeMode?: 'dark' | 'light' | 'system';
 }
 

@@ -39,6 +39,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   dailyWaterGoalMl: 3000,
   dailyStepGoal: 10000,
   restTimerDefaultSec: 90,
+  hapticEnabled: true,
   themeMode: 'dark' as const,
 };
 

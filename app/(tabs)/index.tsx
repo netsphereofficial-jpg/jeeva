@@ -8,7 +8,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Sun, Sunset, Moon } from 'lucide-react-native';
+import { Sun, Sunset, Moon, Settings } from 'lucide-react-native';
+import { Pressable, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { WaterTracker } from '@/components/dashboard/WaterTracker';
 import { SleepCard } from '@/components/dashboard/SleepCard';
@@ -32,6 +35,7 @@ function getFormattedDate(): string {
 
 export default function DashboardScreen() {
   const { colors } = useAppTheme();
+  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(() => {
@@ -93,9 +97,21 @@ export default function DashboardScreen() {
           entering={FadeInDown.delay(0).duration(400)}
           style={styles.greetingContainer}
         >
-          <View style={styles.greetingRow}>
-            {getGreetingIcon()}
-            <Text style={dynamicStyles.greetingText}>{greeting}</Text>
+          <View style={styles.greetingTopRow}>
+            <View style={styles.greetingRow}>
+              {getGreetingIcon()}
+              <Text style={dynamicStyles.greetingText}>{greeting}</Text>
+            </View>
+            <Pressable
+              onPress={() => {
+                if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/settings');
+              }}
+              hitSlop={12}
+              style={[styles.settingsButton, { backgroundColor: colors.surfaceGlass }]}
+            >
+              <Settings size={20} color={colors.textSecondary} strokeWidth={2} />
+            </Pressable>
           </View>
           <Text style={dynamicStyles.dateText}>{dateStr}</Text>
         </Animated.View>
@@ -142,11 +158,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.xl,
   },
+  greetingTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
   greetingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginBottom: spacing.xs,
+  },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   spacer: {
     height: spacing.lg,
