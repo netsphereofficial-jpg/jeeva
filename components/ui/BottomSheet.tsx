@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Modal, Pressable, View, ScrollView, StyleSheet } from 'react-native';
+import { Modal, Pressable, View, StyleSheet } from 'react-native';
 import { useAppTheme } from '@/hooks/useAppTheme';
 
 interface BottomSheetProps {
@@ -47,13 +47,9 @@ export function BottomSheet({
         />
         <View style={[styles.sheet, dynamicStyles.sheet]}>
           <View style={[styles.handle, dynamicStyles.handle]} />
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
+          <View style={styles.content}>
             {children}
-          </ScrollView>
+          </View>
         </View>
       </View>
     </Modal>
@@ -71,8 +67,7 @@ const styles = StyleSheet.create({
   sheet: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '90%',
-    minHeight: '50%',
+    height: '80%',
     paddingBottom: 34,
   },
   handle: {
@@ -86,5 +81,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     flex: 1,
+    maxHeight: '100%',
   },
 });
