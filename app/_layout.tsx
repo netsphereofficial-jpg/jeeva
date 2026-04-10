@@ -37,7 +37,9 @@ import {
 import { AppThemeProvider } from '@/contexts/ThemeContext';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { AchievementPopup } from '@/components/ui/AchievementPopup';
 import { useOnboardingStore } from '@/stores/onboardingStore';
+import { useAchievementStore } from '@/stores/achievementStore';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -49,6 +51,8 @@ function RootLayoutInner() {
   const { isDark, colors } = useAppTheme();
   const router = useRouter();
   const hasOnboarded = useOnboardingStore((s) => s.hasOnboarded);
+  const recentlyUnlocked = useAchievementStore((s) => s.recentlyUnlocked);
+  const clearRecentlyUnlocked = useAchievementStore((s) => s.clearRecentlyUnlocked);
 
   // Redirect to onboarding if the user hasn't completed it
   React.useEffect(() => {
@@ -147,9 +151,19 @@ function RootLayoutInner() {
             gestureEnabled: false,
           }}
         />
+        <Stack.Screen
+          name="achievements"
+          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
       </Stack>
       </ErrorBoundary>
       <StatusBar style={isDark ? 'light' : 'dark'} />
+      {recentlyUnlocked != null && (
+        <AchievementPopup
+          achievementId={recentlyUnlocked}
+          onDismiss={clearRecentlyUnlocked}
+        />
+      )}
     </ThemeProvider>
   );
 }

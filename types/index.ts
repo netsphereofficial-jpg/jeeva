@@ -297,6 +297,22 @@ export interface Program {
 
 // ── Body Measurements ──────────────────────────────────────────
 
+// ── Achievements ──────────────────────────────────────────────
+
+export type AchievementTier = 'bronze' | 'silver' | 'gold' | 'diamond';
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string; // lucide icon name
+  tier: AchievementTier;
+  requirement: string; // human-readable
+  unlockedAt?: number; // timestamp when unlocked
+}
+
+// ── Body Measurements ──────────────────────────────────────────
+
 export interface BodyMeasurement {
   id: string;
   date: string; // YYYY-MM-DD

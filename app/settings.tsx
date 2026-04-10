@@ -22,6 +22,8 @@ import {
   Scale,
   Check,
   User,
+  Trophy,
+  ChevronRight,
 } from 'lucide-react-native';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -29,6 +31,8 @@ import { Card } from '@/components/ui/Card';
 import { MonoText } from '@/components/ui/MonoText';
 import { Toggle } from '@/components/ui/Toggle';
 import { spacing, radius } from '@/theme/spacing';
+import { useAchievementStore } from '@/stores/achievementStore';
+import { ACHIEVEMENTS } from '@/data/achievements';
 
 type ThemeMode = 'dark' | 'light' | 'system';
 
@@ -47,6 +51,15 @@ export default function SettingsScreen() {
   const settings = useSettingsStore((s) => s.settings);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
   const [nameInput, setNameInput] = useState(settings.userName ?? '');
+  const unlockedCount = useAchievementStore((s) => s.unlockedIds.length);
+  const totalAchievements = ACHIEVEMENTS.length;
+
+  const handleAchievements = () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    router.push('/achievements');
+  };
 
   const handleBack = () => {
     if (Platform.OS !== 'web') {
@@ -250,6 +263,23 @@ export default function SettingsScreen() {
             </View>
             <Toggle value={settings.hapticEnabled} onToggle={handleHapticToggle} />
           </View>
+        </Card>
+
+        {/* Achievements */}
+        <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>ACHIEVEMENTS</Text>
+        <Card variant="default" style={styles.sectionCard}>
+          <Pressable onPress={handleAchievements} style={[styles.settingRow, styles.lastOption]}>
+            <View style={[styles.themeIconWrap, { backgroundColor: `${colors.pr}20` }]}>
+              <Trophy size={18} color={colors.pr} strokeWidth={2} />
+            </View>
+            <View style={styles.themeTextWrap}>
+              <Text style={[styles.optionTitle, { color: colors.textPrimary }]}>Achievements & Badges</Text>
+              <Text style={[styles.optionDesc, { color: colors.textSecondary }]}>
+                {unlockedCount}/{totalAchievements} unlocked
+              </Text>
+            </View>
+            <ChevronRight size={20} color={colors.textTertiary} strokeWidth={2} />
+          </Pressable>
         </Card>
 
         {/* App Info */}

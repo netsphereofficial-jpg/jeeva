@@ -4,6 +4,7 @@ import {
   Text,
   ScrollView,
   RefreshControl,
+  Pressable,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +16,7 @@ import {
   Scale,
   Activity,
 } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { useHealthKit, getPlatformName } from '@/hooks/useHealthKit';
 import { ConnectionBanner } from '@/components/health/ConnectionBanner';
 import { MetricCard } from '@/components/health/MetricCard';
@@ -29,6 +31,7 @@ const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function HealthScreen() {
   const { colors } = useAppTheme();
+  const router = useRouter();
   const {
     data,
     isConnected,
@@ -99,15 +102,10 @@ export default function HealthScreen() {
       lineHeight: 20,
       maxWidth: 260,
     },
-    placeholder: {
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderStyle: 'dashed',
-      padding: spacing.lg,
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: 130,
+    bodyTrackerLabel: {
+      fontFamily: 'DMSans_600SemiBold',
+      fontSize: 14,
+      color: colors.textPrimary,
     },
   }), [colors]);
 
@@ -199,12 +197,17 @@ export default function HealthScreen() {
               />
             </View>
             <View style={styles.gridItem}>
-              {/* Placeholder — keeps grid alignment */}
-              <View style={dynamicStyles.placeholder}>
-                <MonoText size={11} color={colors.textTertiary}>
-                  More metrics soon
-                </MonoText>
-              </View>
+              <Pressable onPress={() => router.push('/body')}>
+                <Card variant="tinted" tintColor={colors.health} animationIndex={4}>
+                  <View style={styles.bodyTrackerCard}>
+                    <Scale size={24} color={colors.health} strokeWidth={1.5} />
+                    <Text style={dynamicStyles.bodyTrackerLabel}>Body Tracker</Text>
+                    <MonoText size={11} color={colors.textTertiary}>
+                      Tap to log
+                    </MonoText>
+                  </View>
+                </Card>
+              </Pressable>
             </View>
           </View>
 
@@ -326,5 +329,11 @@ const styles = StyleSheet.create({
   },
   gridItem: {
     flex: 1,
+  },
+  bodyTrackerCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
   },
 });

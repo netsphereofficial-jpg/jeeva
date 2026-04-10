@@ -9,3 +9,4 @@ export { EmptyState } from './EmptyState';
 export { SegmentedControl } from './SegmentedControl';
 export { AnimatedNumber } from './AnimatedNumber';
 export { BottomSheet } from './BottomSheet';
+export { AchievementPopup } from './AchievementPopup';
