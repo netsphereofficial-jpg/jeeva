@@ -16,11 +16,7 @@ interface UseHealthKitReturn {
 
 export function useHealthKit(): UseHealthKitReturn {
   const [isLoading, setIsLoading] = useState(false);
-  // getHealthService() returns a fresh MockHealthService each call
-  const serviceRef = useRef<ReturnType<typeof getHealthService> | null>(null);
-  if (!serviceRef.current) {
-    serviceRef.current = getHealthService();
-  }
+  const serviceRef = useRef(getHealthService());
 
   const data = useHealthStore((s) => s.data);
   const updateSteps = useHealthStore((s) => s.updateSteps);

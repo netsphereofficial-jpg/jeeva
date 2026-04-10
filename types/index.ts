@@ -7,6 +7,7 @@ export interface UserSettings {
   dailyWaterGoalMl: number;
   dailyStepGoal: number;
   restTimerDefaultSec: number;
+  themeMode?: 'dark' | 'light' | 'system';
 }
 
 // ── Exercise Catalog ─────────────────────────────────────────────

@@ -7,6 +7,8 @@ export const spacing = {
   '2xl': 24,
   '3xl': 32,
   '4xl': 48,
+  '5xl': 64,
+  screenPadding: 20,
 } as const;
 
 export const radius = {
